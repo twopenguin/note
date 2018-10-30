@@ -806,7 +806,7 @@ dubbo支持的协议： dubbo、RMI、**hessian**、webservice、http、thrift
 
 服务端不需要做改变，只需要改变客户端如下：
 
-![1527516474043](F:\SyncResouce\笔记\全面笔记\picture/1527516474043.png)
+![1527516474043](../picture/1527516474043.png)
 
 就是async 属性设置为true，
 
@@ -821,7 +821,7 @@ Future<Foo> fooFuture = RpcContext.getContext().getFuture();
 
 ##为什么RpcContext知道这个就是此接口的返回结果
 
-![1527517511692](F:\SyncResouce\笔记\全面笔记\picture/1527517511692.png)
+![1527517511692](../picture/1527517511692.png)
 
 实线表示同步，虚线表示异步
 
@@ -925,7 +925,7 @@ provider://177.1.1.82:20880
 
 其实现类大概有下面这些：
 
-![1527520246639](F:\SyncResouce\笔记\全面笔记\picture/1527520246639.png)
+![1527520246639](../picture/1527520246639.png)
 
 ## Random LoadBalance
 
