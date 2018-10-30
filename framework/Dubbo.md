@@ -391,9 +391,9 @@ for (Container container : containers) {
 
 `containers` 是一个什么东西呢，它其实是Dubbo提供的容器，而Dubbo提供了这么几种容器
 
-![1527091435977](F:\SyncResouce\笔记\全面笔记\picture/1527091435977.png) 
+![1527091435977](../picture/1527091435977.png) 
 
-![1527091550975](F:\SyncResouce\笔记\全面笔记\picture/1527091550975.png)
+![1527091550975](../picture/1527091550975.png)
 
 而我们刚刚使用的又是spring容器，我们就打开`SpringContainer` 的 start() 方法：
 
@@ -676,7 +676,7 @@ public void collect(URL url) {
 
 我们可以使用telnet 连接上dubbo的某个服务，并且可以进行一些简单的操作，比如查看哪些接口暴露的服务，以及简单调用等等，用于生产上去排查一些问题。大概示意图如下：
 
-![1527172233719](F:\SyncResouce\笔记\全面笔记\picture/1527172233719.png)
+![1527172233719](../picture/1527172233719.png)
 
 连接：telnet  ip port 
 
