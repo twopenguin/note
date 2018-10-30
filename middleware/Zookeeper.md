@@ -4,7 +4,7 @@ typora-copy-images-to: ..\picture
 
 # 简介
 
-Zookeeper作为一个分布式服务框架，主要是用来解决分布式数据一致性问题。
+Zookeeper作为一个分布式服务协调框架，主要是用来解决分布式数据一致性问题。
 
 # 安装
 
@@ -690,6 +690,51 @@ ps：这个客户端创建了一个临时节点，另一个客户也是可以看
 ## 顺序性临时节点(EPHEMERAL_SEQUENTIAL)
 
 带创建顺序的临时节点
+
+
+
+# zxid
+
+全称是：ZooKeeper Transaction Id
+
+##zxid是什么
+
+每次修改ZooKeeper状态都会收到一个zxid形式的时间戳，也就是ZooKeeper事务ID。
+
+事务ID是ZooKeeper中所有修改总的次序。每个修改都有唯一的zxid，如果zxid1小于zxid2，那么zxid1在zxid2之前发生。
+
+***即，zxid是整个zookeeper服务器集群共同关注的***
+
+# ZooKeeper的Stat结构体
+
+**czxid- 引起这个znode创建的zxid，创建节点的事务的zxid（ZooKeeper Transaction Id）**
+
+**ctime - znode被创建的毫秒数(从1970年开始)**
+
+**mzxid - znode最后更新的zxid**
+
+**mtime - znode最后修改的毫秒数(从1970年开始)**
+
+**pZxid-znode最后更新的子节点zxid**
+
+cversion - znode子节点变化号，znode子节点修改次数
+
+dataversion - znode数据变化号
+
+aclVersion - znode访问控制列表的变化号
+
+**ephemeralOwner- 如果是临时节点，这个是znode拥有者的session id。如果不是临时节点则是0。**
+
+**dataLength- znode的数据长度**
+
+**numChildren - znode子节点数量**
+
+# 通知机制
+
+ 客户端注册监听它关心的目录节点，当目录节点发生变化（**数据改变、被删除、子目录节点增加删除**）时，
+zookeeper会通知客户端。
+
+Zookeeper 客户端里的所有读取操作：getData(),getChildren()和exists()都有设置watch的选项。
 
 
 

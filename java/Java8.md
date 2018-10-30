@@ -388,7 +388,23 @@ public void test5(){
 
 ## Stream API
 
+### 中间操作：
 
+| 操 作      | 类 型  | 返回类型      | 操作参数           | 函数描述符         |
+| -------- | ---- | --------- | -------------- | ------------- |
+| filter   | 中间   | Stream<T> | Predicate<T>   | T -> boolean  |
+| map      | 中间   | Stream<R> | Function<T, R> | T -> R        |
+| limit    | 中间   | Stream<T> |                |               |
+| sorted   | 中间   | Stream<T> | Comparator<T>  | (T, T) -> int |
+| distinct | 中间   | Stream<T> |                |               |
+
+### 终端操作 ：
+
+| 操 作     | 类 型  | 目 的                                 |
+| ------- | ---- | ----------------------------------- |
+| forEach | 终端   | 消费流中的每个元素并对其应用 Lambda。这一操作返回 void   |
+| count   | 终端   | 返回流中元素的个数。这一操作返回 long               |
+| collect | 终端   | 把流归约成一个集合，比如 List、 Map 甚至是 Integer。 |
 
 
 
@@ -414,6 +430,52 @@ Java 8中允许接口中包含具有具体实现的方法，该方法称为“�
 Java8 中，接口中允许添加静态方法。 
 
 ## 新时间日期API
+
+### LocalDate
+
+java 8 中表示日期的类
+
+#### 获取此对象
+
+```java
+LocalDate.of(2014, 3, 18);		//获取一个固定时间的日期
+LocalDate.now();				//获取今天的日期
+LocalDate.parse("2014-03-18");	//通过格式转化
+```
+
+#### 操作此对象
+
+```java
+LocalDate date = LocalDate.now();
+int year = date.getYear();
+Month month = date.getMonth();
+int day = date.getDayOfMonth();
+DayOfWeek dow = date.getDayOfWeek();
+int len = date.lengthOfMonth();
+boolean leap = date.isLeapYear();
+//使用TemporalField读取LocalDate的值
+int year = date.get(ChronoField.YEAR);
+int month = date.get(ChronoField.MONTH_OF_YEAR);
+int day = date.get(ChronoField.DAY_OF_MONTH);
+```
+
+### LocalTime
+
+java 8中表示时间的类,操作类似`LocalDate`，具体的差异也会列出来
+
+#### 获取此对象
+
+```java
+LocalTime time = LocalTime.parse("13:45:20");		//获取一个固定时间的日期
+```
+
+### LocalDateTime 
+
+这个复合类，是LocalDate和LocalTime的合体 ，它同时表示了日期和时间，但不带有时区信息，你可以直接创建，也可以通过合并日期和时间对象构造 。
+
+
+
+
 
 ## 其他新特性
 
