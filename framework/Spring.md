@@ -26,10 +26,14 @@ class BookService{
 1）、默认优先按照类型去容器中找对应的组件:applicationContext.getBean(BookDao.class);找到就赋值
 2）、如果找到多个相同类型的组件，再将属性的名称作为组件的id去容器中查找
 
-					applicationContext.getBean("bookDao")
+```java
+applicationContext.getBean("bookDao")
+```
 3）、@Qualifier("bookDao")：使用@Qualifier指定需要装配的组件的id，而不是使用属性名
 4）、自动装配默认一定要将属性赋值好，没有就会报错；
-	可以使用@Autowired(required=false);
+```java
+可以使用@Autowired(required=false);
+```
 5）、@Primary：让Spring进行自动装配的时候，默认使用首选的bean；也可以继续使用@Qualifier指定需要装配的bean的名字
 
 **原理：**
@@ -2878,4 +2882,14 @@ sql执行语句：
 Hibernate: select fxenterpri0_.id as id9_, fxenterpri0_.product_name asproduct_name  from fx_enterprise fxenterpri0_ order by fxenterpri0_.id desc
 
 
+
+# 怎么看Spring的源码
+
+##创建bean需要什么
+
+## 怎么创建Bean
+
+## bean的属性赋值
+
+## bean的销毁
 

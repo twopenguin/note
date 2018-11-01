@@ -28,7 +28,9 @@ public class ServerProperties
 }
 ```
 
-看看这个类的属性，大概也能猜到我们能使用的`server` 开头的参数，都是在这个类里面定义的，比如`port` `contextPath`等等
+看看这个类的属性，大概也能猜到我们能使用的`server` 开头的参数，都是在这个类里面定义的，比如`port` `contextPath`等等。
+
+
 
 ## 查看可以使用哪些配置项
 
