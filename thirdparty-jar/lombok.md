@@ -198,7 +198,9 @@ public class LombokDemo {
 
 ```
 
-## 3.6 `@Data`: 自动为所有字段添加@ToString, @EqualsAndHashCode, @Getter方法，为非final字段添加@Setter,和@RequiredArgsConstructor@RequiredArgsConstructor
+## 3.6 `@Data`: 自动为所有字段
+
+添加@ToString, @EqualsAndHashCode, @Getter方法，为非final字段添加@Setter,和@RequiredArgsConstructor@RequiredArgsConstructor
 
 源码：
 
@@ -269,7 +271,7 @@ public class AppNameProperties {
 }
 ```
 
-
+## 3.7 `@Accessors(chain = true) ` 生成链式的setter方法
 
 # 4. lombok实现原理分析
 
