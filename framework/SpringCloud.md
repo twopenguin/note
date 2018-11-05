@@ -127,17 +127,83 @@ The term "Microservice Architecture" has sprung up over the last few years to de
 
 ## 各微服务框架对比
 
-# SpringCloud概述
+# SpringCloud
 
-## 是什么
+## SpringCloud概述
+
+### 是什么
+
+先看看官网说明，[看这里](spring.io)
+
+#### COORDINATE ANYTHING: DISTRIBUTED SYSTEMS SIMPLIFIED
+
+Building distributed systems doesn't need to be complex and error-prone. Spring Cloud offers a simple and accessible programming model to the most common distributed system patterns, helping developers build resilient, reliable, and coordinated applications. Spring Cloud is built on top of Spring Boot, making it easy for developers to get started and become productive quickly.
+
+SpringCloud=分布式微服务架构下的一站式解决方案，是各个微服务架构落地技术的集合体。
+
+### 能干嘛
+
+### 怎么学习
+
+官网：
+
+http://projects.spring.io/spring-cloud/
+
+参考书：
+
+Spring Cloud Netflix 中文参考文档：https://springcloud.cc/spring-cloud-netflix.html
+
+API说明：
+
+```java
+http://cloud.spring.io/spring-cloud-static/Dalston.SR1/
+https://springcloud.cc/spring-cloud-dalston.html
+```
+
+SpringCloud中国社区：http://springcloud.cn/
+
+SpringCloud中文网：http://springcloud.cc/
 
 
 
-## 能干嘛
+### 怎么玩
 
-## 去哪儿下
+### SpringCloud国内使用情况
 
-## 怎么玩
+各个大厂都在使用SpringCloud，联通，华为等等
 
-## SpringCloud国内使用情况
+阿里云也在使用
+
+## SpringBoot和SpringCloud的关系
+
+SpringBoot 专注于快速开发单个体微服务。
+
+SpringCloud是关注全局的微服务协调治理框架，它将SpringBoot开发的一个个单体微服务整合病管理起来。为哥哥微服务之间提供，配置管理、服务发现、断路器、路由、微代理、事件总线、全局锁、决策竞选、分布式会话等等集成服务。
+
+SpringBoot可以离开SpringCloud独立使用开发项目。但是SpringCloud离不开SpringBoot。属于依赖关系。
+
+**SpringBoot专注于快速、方便的开发单个微服务个体，SpringCloud关注全局的服务治理框架。**
+
+## SpringCloud 和 Dubbo的区别
+
+先来看一张表对比一下：
+
+| 微服务技术  | Dubbo         | SpringCloud                  |
+| ------ | ------------- | ---------------------------- |
+| 服务注册中心 | Zookeeper     | Spring Cloud Netflix Eureka  |
+| 服务调用方式 | RPC           | REST API                     |
+| 服务监控   | Dubbo-monitor | SpringBoot Admin             |
+| 断路器    | 不完善           | Spring Cloud Netflix Hystnix |
+| 服务网关   | 无             | Spring Cloud Netflix Zuul    |
+| 分布式配置  | 无             | Spring Cloud Config          |
+| 服务跟踪   | 无             | Spring Cloud Sleuth          |
+| 消息总线   | 无             | Spring Cloud Bus             |
+| 数据流    | 无             | Spring Cloud Stream          |
+| 批量任务   | 无             | Spring Cloud Task            |
+
+### 社区活跃度
+
+
+
+**最大的区别：SpringCloud抛弃了Dubbo的RPC通信，采用的是基于HTTP的REST方式**
 
