@@ -1,3 +1,7 @@
+---
+typora-copy-images-to: ..\picture
+---
+
 
 
 # SpringCloud面试题
@@ -299,11 +303,184 @@ Eureka Server 提供服务注册服务
 
 Eureka Client 是一个Java 客户端，用于简化 与Eureka Server的交互，客户端同时也具备一个内置的、使用轮询(round-robin)负载算法的负载均衡器。在应用启动后，将回向 Eureka Server 发送心跳（默认周期是30秒），如果Eureka Server 在多个心跳周期内没有接收到某个节点的心跳，Eureka Srever 将会从服务器注册表中把这个服务节点移除（默认是90秒）。
 
+## 角色
+
+有三大角色：
+
+## 怎么玩
+
+###Eureka Server
+
+1.导入相应得maven 依赖：
+
+```xml
+<!--eureka-server服务端 -->
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-starter-eureka-server</artifactId> <!-- 后面跟着server就是server端，没有就是客户端-->
+</dependency>
+```
+
+2.配置文件
+
+```yaml
+server:
+  port: 7001
+
+eureka:
+  instance:
+    hostname: eureka7001.com #eureka服务端的实例名称
+  client:
+    register-with-eureka: false     #false表示不向注册中心注册自己。
+    fetch-registry: false     #false表示自己端就是注册中心，我的职责就是维护服务实例，并不需要去检索服务
+    service-url:
+      单机 defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/       #设置与Eureka Server交互的地址查询服务和注册服务都需要依赖这个地址（单机）。
+#      defaultZone: http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+```
+
+3.在主启动类上面加上一个注解`EnableEurekaServer`
+
+```java
+@SpringBootApplication
+@EnableEurekaServer // EurekaServer服务器端启动类,接受其它微服务注册进来
+public class EurekaServer7001_App {
+    public static void main(String[] args) {
+        SpringApplication.run(EurekaServer7001_App.class, args);
+    }
+}
+```
+
+4.怎么确定Eureka Server已经启动好了呢？
+
+在浏览器输入`http://localhost:7001/` 能看到相应得页面，那就是启动成功了。
+
+### Eureka Client
+
+1.导入相应得maven 依赖：
+
+```xml
+<!-- 将微服务provider侧注册进eureka -->
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-starter-eureka</artifactId>
+</dependency>
+```
+
+2.配置文件
+
+```yaml
+eureka:
+  client: #客户端注册进eureka服务列表内
+    service-url: 
+      #defaultZone: http://localhost:7001/eureka
+       defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/       
+```
 
 
 
+3.在主启动类上面加上一个注解`@EnableEurekaClient`
 
+```java
+@SpringBootApplication
+@EnableEurekaClient //本服务启动后会自动注册进eureka服务中
+// @EnableDiscoveryClient //服务发现
+public class DeptProvider8001_App {
+    public static void main(String[] args) {
+        SpringApplication.run(DeptProvider8001_App.class, args);
+    }
+}
+```
 
+## Eureka 自我保护机制
+
+简单点就是**好死不如赖活着**：
+
+某时刻某一个微服务不可用了，Eureka 不会立刻清理，依旧会对改微服务的信息进行保存
+
+## Eureka 的info 信息
+
+info信息是什么？先看看下面的这张图
+
+![1541510352491](../picture/1541510352491.png)
+
+当我们在Eureka Server的网站上，看见注册进入Eureka Server的服务时，我们把鼠标放在上面，看看浏览器的左下角显示的是，这个链接实际访问的就是这个服务的**根目录**加上`info` , 这儿的info就是 Eureka 服务的 info 信息，**正常情况下打开是会报错的**。因为没有配置。
+
+## Eureka 优化
+
+### 主机名称和服务名称修改
+
+在上面Eureka 的 info 信息那一节的截图，会发现，我们的服务的名字很长不好认，怎么修改呢？
+就是修改我们自己服务的yaml 或者 properties 配置文件：
+
+```yaml
+eureka:     
+  instance:
+    instance-id: microservicecloud-dept8001  #这儿就是配置服务实例的名字，这样Erueka Server的浏览器上面显示的就会是我们配置的名字，而不是那么长的
+```
+
+### 访问路径可以显示IP地址
+
+还是上面的图看左下角，会注意到显示的ip是 localhost，我们现在要做的就是让那儿显示IP；
+
+```yaml
+eureka:     
+  instance:
+    prefer-ip-address: true     #访问路径可以显示IP地址 
+```
+
+### ErueKa info 界面的配置和优化
+
+问题：还是上面的图，超链接点击会报ErrorPage
+
+解决：
+
+1.在目标微服务的pom文件中添加 `actuator`, 因为它主管信息监控和信息完善
+
+```xml
+<!-- actuator监控信息完善 -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+2.在总的父工程microservicecloud修改pom添加构建build信息
+
+```xml
+<!-- 这个插件的具体用法，参看Maven文章 -->  
+<build>
+    <finalName>microservicecloud</finalName>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <delimiters>
+            <delimit>$</delimit>
+          </delimiters>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+```
+
+3.在目标服务中的yaml 文件中添加如下内容：
+
+那么点开那个超链接的时间，那么这些内容就会以json串的形式显示。
+
+```yaml
+info: 
+  app.name: atguigu-microservicecloud
+  company.name: www.atguigu.com
+  build.artifactId: $project.artifactId$
+  build.version: $project.version$
+```
 
 
 
