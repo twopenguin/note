@@ -1521,6 +1521,20 @@ Bean Name:dog
 
 结果显示：只有`Dog` 加入了容器，`MyImportBeanDefinitionRegistrar` 没有加入容器
 
+## Template
+
+在Spring 中有 很多的 Template 比如：`JdbcTemplate` ，`RedisTemplate`， `RestTemplate`.
+
+他们的使用方法也是大同小异的；这儿暂时不写使用的方法，而是借助`JdbcTemplate` 源码来理解其中的思想以及代理和回调的妙处。
+
+从 `JdbcTemplate` 的 `execute` 方法开始：
+
+```java
+
+```
+
+
+
 # SpringMVC
 
 ## SpringHelloWorld

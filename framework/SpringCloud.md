@@ -207,3 +207,103 @@ SpringBoot可以离开SpringCloud独立使用开发项目。但是SpringCloud离
 
 **最大的区别：SpringCloud抛弃了Dubbo的RPC通信，采用的是基于HTTP的REST方式**
 
+
+
+## RestTemplet
+
+它提供了多做便捷访问远程Http服务的的方法。
+
+是一种简单便捷的访问restful 服务模板类，是spring 提供的用于访问Rest服务的**客户端模板工具**集
+
+
+
+[官网点我](https://docs.spring.io/spring/docs/3.0.x/javadoc-api/org/springframework/web/client/RestTemplate.html)
+
+
+
+使用总规则：
+使用RestTemplate 访问restful服务接口非常的方便无脑
+
+(url, requestMap, ResponseBean.class) 这三个参数分别代表
+
+REST 请求地址，请求参数，HTTP响应转换成的对象类型
+
+### 常见用法
+
+```java
+    public static final String REST_URL_PREFIX = "http://localhost:8001";
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    /**
+     * add 操作
+     * @param dept
+     */
+    @RequestMapping(value = "/consumer/dept/add")
+    public boolean add(Dept dept){
+        return restTemplate.postForObject(REST_URL_PREFIX+"/dept/add", dept, Boolean.class);
+    }
+
+    /**
+     * get 操作
+     * @param id
+     */
+    @RequestMapping(value = "/consumer/dept/get/{id}")
+    public Dept get(@PathVariable Long id){
+        return restTemplate.getForObject(REST_URL_PREFIX+"/dept/get/"+id,Dept.class);
+    }
+
+    /**
+     * list 操作
+     */
+    @RequestMapping(value = "/consumer/dept/list")
+    public List<Dept> list(){
+        return restTemplate.getForObject(REST_URL_PREFIX+"/dept/list" , List.class);
+    }
+```
+
+
+
+# Eureka
+
+## 是什么
+
+参看[官网](https://github.com/Netflix/eureka)
+
+简单说说就是：
+
+Eureka 是 Netflix 的一个子模块，也是核心模块之一。Eureka 是一个基于REST 的服务，用于定位服务，以实现云端中间层服务发现和故障转移。服务注册与发现对于微服务架构来说非常重要的，有了服务注册与发现，**只需要使用服务的标识符，就可以访问到服务，而不需要修改服务调用的配置文件了。功能类似`dubbo`的注册中心，比如Zookeeper。**
+
+
+
+**Netflix 在设计 Eureka时遵守的是AP原则。**
+
+
+
+## 原理
+
+Spring Cloud 封装了 Netflix 公司开发的 Eureka,来实现服务注册和发现
+
+Eureka 采用了 C - S 的设计架构，Eureka Server 作为服务注册功能的的服务器， 它是服务注册中心。
+
+而系统中的其他微服务，使用Eureka 的客户端连接到 Eureka Server 并维持心跳连接，这样系统的维护人员就可以通过 Eureka Server 来监控各个微服务是否正常运行，SpringCloud 的一些其他模块（比如Zuul）就可以通过Eureka Server 来发现系统中的其他服务，并执行相关逻辑。
+
+
+
+Eureka 包含两大组件：Eureka Server 和 Eureka Client
+
+Eureka Server 提供服务注册服务
+
+各个节点启动后，会在 Eureka Server 中进行注册，这样Eureka Server中的服务注册表中将会存储所有可用服务节点信息，服务节点的信息可以在界面中直观的看到。
+
+Eureka Client 是一个Java 客户端，用于简化 与Eureka Server的交互，客户端同时也具备一个内置的、使用轮询(round-robin)负载算法的负载均衡器。在应用启动后，将回向 Eureka Server 发送心跳（默认周期是30秒），如果Eureka Server 在多个心跳周期内没有接收到某个节点的心跳，Eureka Srever 将会从服务器注册表中把这个服务节点移除（默认是90秒）。
+
+
+
+
+
+
+
+
+
