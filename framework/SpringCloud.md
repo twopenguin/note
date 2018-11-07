@@ -190,6 +190,8 @@ SpringBoot可以离开SpringCloud独立使用开发项目。但是SpringCloud离
 
 ## SpringCloud 和 Dubbo的区别
 
+###功能实现的区别
+
 先来看一张表对比一下：
 
 | 微服务技术  | Dubbo         | SpringCloud                  |
@@ -207,11 +209,19 @@ SpringBoot可以离开SpringCloud独立使用开发项目。但是SpringCloud离
 
 ### 社区活跃度
 
+可以查看两个网站，然后看看两个网站的活跃对比：
 
+https://github.com/dubbo
+
+https://github.com/spring-cloud
+
+
+
+###区别总结
 
 **最大的区别：SpringCloud抛弃了Dubbo的RPC通信，采用的是基于HTTP的REST方式**
 
-
+严格来说，这两种方式各有优劣。虽然从一定程度来说，后者牺牲了服务调用的性能，但也避免了上面提到的原生RPC带来的问题。而且REST相比RPC更为灵活，服务提供方和调用方的依赖只依靠一纸契约，不存在代码级别的强依赖，这在强调快速演化的微服务环境中，显得更加合适。
 
 ## RestTemplet
 
@@ -307,6 +317,12 @@ Eureka Client 是一个Java 客户端，用于简化 与Eureka Server的交互�
 
 有三大角色：
 
+Eureka Server 提供服务注册与发现
+
+Service Provider 服务提供方将自身服务注册到Eureka，从而使服务消费方能够找到
+
+Service Consumer 服务消费方从Eureka Server 获取注册的服务列表，从而能够消费服务
+
 ## 怎么玩
 
 ###Eureka Server
@@ -395,7 +411,17 @@ public class DeptProvider8001_App {
 
 简单点就是**好死不如赖活着**：
 
-某时刻某一个微服务不可用了，Eureka 不会立刻清理，依旧会对改微服务的信息进行保存
+某时刻某一个微服务不可用了，Eureka 不会立刻清理，依旧会对改微服务的信息进行保存。
+
+### 关闭自我保护
+
+一般不推荐关闭自我保护
+
+```properties
+eureka.server.enable-self-preservation=false
+```
+
+
 
 ## Eureka 的info 信息
 
@@ -482,5 +508,159 @@ info:
   build.version: $project.version$
 ```
 
+## 查看Eureka 默认配置
 
+ `Eureka Server`  查看类`EurekaServerConfigBean` 即可
+
+`Eureka Client`  查看类 `EurekaClientConfigBean` 即可
+
+## 服务发现
+
+### @EnableDiscoveryClient 和 @EnableEurekaClient 的区别
+
+## Eureka 集群搭建
+
+###Eureka Server 的修改
+
+这个我使用三个应用来作为Eureka Server 的集群：
+
+注意的地方：
+
+第一：hostname 必须不一样 `eureka.instance.hostname`
+
+第二：`defaultZone` 要配置为互补的方式；具体参看下面的配置文件
+
+服务器1：
+
+```yaml
+server:
+  port: 7001
+
+eureka:
+  instance:
+    hostname: eureka7001.com #eureka服务端的实例名称
+  client:
+    register-with-eureka: false     #false表示不向注册中心注册自己。
+    fetch-registry: false     #false表示自己端就是注册中心，我的职责就是维护服务实例，并不需要去检索服务
+    service-url:
+#      单机 defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/       #设置与Eureka Server交互的地址查询服务和注册服务都需要依赖这个地址（单机）。
+      defaultZone: http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+```
+
+服务器2：
+
+```yaml
+server:
+  port: 7002
+
+eureka:
+  instance:
+    hostname: eureka7002.com #eureka服务端的实例名称
+  client:
+    register-with-eureka: false     #false表示不向注册中心注册自己。
+    fetch-registry: false     #false表示自己端就是注册中心，我的职责就是维护服务实例，并不需要去检索服务
+    service-url:
+#      单机 defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/       #设置与Eureka Server交互的地址查询服务和注册服务都需要依赖这个地址（单机）。
+      defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7003.com:7003/eureka/
+```
+
+服务器3：
+
+```yaml
+server:
+  port: 7003
+
+eureka:
+  instance:
+    hostname: eureka7003.com #eureka服务端的实例名称
+  client:
+    register-with-eureka: false     #false表示不向注册中心注册自己。
+    fetch-registry: false     #false表示自己端就是注册中心，我的职责就是维护服务实例，并不需要去检索服务
+    service-url:
+#      单机 defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/       #设置与Eureka Server交互的地址查询服务和注册服务都需要依赖这个地址（单机）。
+      defaultZone: http://eureka7002.com:7002/eureka/,http://eureka7001.com:7001/eureka/
+```
+
+### Eureka Client 修改
+
+因为要注册进入整个集群，所以客户端的`defaultZone` 也要使用集群的配置，具体参看下面：
+
+```yaml
+eureka:
+  client: #客户端注册进eureka服务列表内
+    service-url: 
+      #defaultZone: http://localhost:7001/eureka
+       defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/ 
+```
+
+## Eureka 和 Zookeeper 对比
+
+CAP理论：
+
+C：Consistency（强一致性）
+
+A：Availability（可用性）
+
+P：Partition Tolerance （分区容错性）
+
+**Eureka 遵守AP， Zookeeper 遵守CP**
+
+### Zoopkeeper保证CP： 
+
+当向注册中心查询服务列表时，我们可以容忍注册中心返回的是几分钟以前的注册信息，但是不能接受服务直接down掉不可用。也就是说，服务注册功能对可用性的要求要高于一致性。但是zk会出现这样的一种情况，当master节点因网路故障与其他节点失去联系时，剩余的节点会重新进行leader选举。问题在于，选举leader的时间太长，30~120s，且选举期间整个zk集群是都是不可用的，这就导致在选举期间注册服务瘫痪，在云部署的环境下，因网络问题使得zk集群失去master节点是较大概率会发生的事，虽然服务能够最终恢复，但是漫长的选举时间导致的注册长期不可用是不能容忍的。
+
+### Eureka保证AP： 
+
+Eureka看明白了这一点，因此在设计时就优先保证可用性。Eureka各个节点都是平等的，几个节点挂掉不影响正常节点的工作，剩余的节点依然可以提供注册和查询服务。而Eureka的客户端在向某个Eureka注册时如果发现连接失败，则会自动切换至其他的节点，只要有一台Eureka还在，就能保证注册服务可用（保证可用性），只不过查到的信息可能不是最新的（不保证一致性）。除此之外，Eureka还有一种自我保护机制，如果在15分钟内超过85%的节点都没有正常的心跳，那么Eureka就认为客户端与注册中心出现了网络故障，此时会出现以下几种情况： 
+1.Eureka不再从注册列表中移除因为长时间没有收到心跳而应该过期的服务 
+2.Eureka仍然能够接受新服务的注册和查询请求，但是不会被同步到其它节点上（即保证当前节点依然可用） 
+3.当前网络稳定时，当前实例新的注册信息会被同步到其它节点中 
+
+因此，Eureka可以很好的应对因网络故障导致节点失去联系的情况，而不会像zookeeper那样使整个注册服务瘫痪。
+
+# Ribbon
+
+## 概述
+
+###Ribbon 是什么
+
+Spring Cloud Ribbon 是 基于Netflix Ribbon 实现的一套**客户端** 的 **负载均衡**工具。
+
+主要功能是提供客户端的软件负载均衡算法，将Netflix的中间层服务连接在一起。Ribbon客户端组件提供一系列完善的配置项如连接超时，重试等。简单的说，就是在配置文件中列出Load Balancer（简称LB）后面所有的机器，Ribbon会自动的帮助你基于某种规则（如简单轮询，随即连接等）去连接这些机器。我们也很容易使用Ribbon实现自定义的负载均衡算法。
+
+Dubbo 和 SpringCloud 中均给我们提供了负载均衡，**但SpringCloud的负载均衡可以自定义**。
+
+### Load Balancer
+
+刚刚上面说Ribbon 是一种负载均衡工具，那么我们就来简单说说什么是负载均衡。负载均衡就是把请求均衡的分摊到对于的服务器上面。
+
+
+
+**目前主流的LB方案可分成两类**：
+
+​	一种是集中式LB, 即在服务的消费方和提供方之间使用独立的LB设施(可以是硬件，如F5, 也可以是软件，如nginx), 由该设施负责把访问请求通过某种策略转发至服务的提供方；
+
+​	另一种是进程内LB，将LB逻辑集成到消费方，消费方从服务注册中心获知有哪些地址可用，然后自己再从这些地址中选择出一个合适的服务器。Ribbon就属于后者，它只是一个类库，集成于消费方进程，消费方通过它来获取到服务提供方的地址。 
+
+## 怎么玩
+
+因为Ribbon是一个客户端的负载均衡工具，那么我们就在客户端操作。
+
+1.导入Maven 依赖：
+
+```xml
+        <!-- Ribbon相关 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-eureka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-ribbon</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+```
 
