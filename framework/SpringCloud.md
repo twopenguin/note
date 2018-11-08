@@ -664,3 +664,26 @@ Dubbo 和 SpringCloud 中均给我们提供了负载均衡，**但SpringCloud的
         </dependency>
 ```
 
+2.在启动类上面加上`@EnableEurekaClient`
+
+3.在`RestTemplate` 上面加上`@LoadBalanced` 注解
+
+```java
+@Bean
+@LoadBalanced
+public RestTemplate getRestTemplate(){
+  return new RestTemplate();
+}
+```
+
+
+
+## IRule
+
+根据特定算法从服务列表中选取一个要访问的服务；
+
+```
+RoundRobinRule : 轮询算法
+
+```
+

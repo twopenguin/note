@@ -577,3 +577,13 @@ ChannelPipeline 中删除. 上面的分析过程, 可以用如下图片展示:
 ![1530262502676](../picture/1530262502676.png)
 
 分析到这里, 我们已经简单了解了自定义的 handler 是如何添加到 ChannelPipeline 中的, 不过限于主题与篇幅的原因, 我没有在这里详细展开 ChannelPipeline 的底层机制, 我打算在下一篇 **Netty 源码分析之 二 贯穿Netty 的大动脉 ── ChannelPipeline** 中对这个问题进行深入的探讨.
+
+# codec framework
+
+对于请求协议的编码解码，当然是可以按照协议格式自己操作ChannelBuffer中的字节数据。另一方面，Netty也做了几个很实用的codec helper，这里给出简单的介绍。
+
+decode：解码
+
+encode：编码
+
+Codec：如果一个类是这个结尾就是表示是双工的，什么都干，既要编码也要解码
