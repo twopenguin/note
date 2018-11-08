@@ -666,7 +666,7 @@ Dubbo 和 SpringCloud 中均给我们提供了负载均衡，**但SpringCloud的
 
 2.在启动类上面加上`@EnableEurekaClient`
 
-3.在`RestTemplate` 上面加上`@LoadBalanced` 注解
+3.在`RestTemplate` 上面加上`@LoadBalanced` 注解，这儿使用的就是默认的`RoundRobinRule` 算法来实现负载均衡
 
 ```java
 @Bean
@@ -687,3 +687,4 @@ RoundRobinRule : 轮询算法
 
 ```
 
+##怎么自己切换
