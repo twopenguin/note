@@ -59,3 +59,9 @@ application.setBannerMode(Banner.Mode.OFF);
 
 
 
+# 疑问
+
+1.为什么主启动类所在的目录下的所以目录都是`ComponentScan` 所能扫描的范围？
+
+
+

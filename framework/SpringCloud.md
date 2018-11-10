@@ -279,7 +279,7 @@ REST 请求地址，请求参数，HTTP响应转换成的对象类型
 
 
 
-# Eureka
+# Eureka（服务注册与发现）
 
 ## 是什么
 
@@ -618,7 +618,7 @@ Eureka看明白了这一点，因此在设计时就优先保证可用性。Eurek
 
 因此，Eureka可以很好的应对因网络故障导致节点失去联系的情况，而不会像zookeeper那样使整个注册服务瘫痪。
 
-# Ribbon
+# Ribbon（负载均衡）
 
 ## 概述
 
@@ -687,4 +687,177 @@ RoundRobinRule : 轮询算法
 
 ```
 
-##怎么自己切换
+##怎么自己切换负载均衡规则
+
+```java
+@Configuration
+public class ConfigBean {
+
+    @Bean
+    @LoadBalanced
+    public RestTemplate getRestTemplate(){
+        return new RestTemplate();
+    }
+
+  	//就是在这儿加入一个其他的规则Bean
+    @Bean
+    public IRule getRule(){
+        return new RandomRule();
+    }
+}
+```
+
+## 自定义规则
+
+1.主启动类上面加上`RibbonClient` 注解，具体的内容如下：
+
+```java
+@SpringBootApplication
+@EnableEurekaClient
+
+//这儿的name 表示这个规则是针对哪个微服务提供者，configuration 表示配置类是谁，就是下面我们自己定义的类
+@RibbonClient(name= "MICROSERVICECLOUD-DEPT", configuration = MySelfRule.class)
+public class DeptConsumer80_App {
+
+    public static void main(String[] args) {
+        SpringApplication.run(DeptConsumer80_App.class, args);
+    }
+}
+```
+
+
+
+2.因微服务启动类，默认会扫描其所在目录下的所有配置信息，所以新建规则不能放在启动类的同级目录或者子目录下面：
+
+主目录是`com.zcd.springcloud` , 而我们的规则类的主目录是`com.zcd.myrule`
+
+`MySelfRule` 需要加上`Configuration` 加入Spring容器，
+
+```java
+package com.zcd.myrule;
+
+import com.netflix.loadbalancer.IRule;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class MySelfRule {
+
+    @Bean
+    public IRule myRule() {
+        //return new RandomRule();// Ribbon默认是轮询，我自定义为随机
+        //return new RoundRobinRule();// Ribbon默认是轮询，我自定义为随机
+
+        return new RandomRule_ZY();// 我自定义为每台机器5次
+    }
+}
+
+```
+
+3.`RandomRule_ZY` 就是专门自定义规则的类
+
+主要的规则就是，实现`com.netflix.loadbalancer.AbstractLoadBalancerRule` 类，然后重写choose方法，定义我们自己的规则
+
+```java
+public class RandomRule_ZY extends AbstractLoadBalancerRule {
+
+    // total = 0 // 当total==5以后，我们指针才能往下走，
+    // index = 0 // 当前对外提供服务的服务器地址，
+    // total需要重新置为零，但是已经达到过一个5次，我们的index = 1
+    // 分析：我们5次，但是微服务只有8001 8002 8003 三台，OK？
+    //
+
+
+    private int total = 0;            // 总共被调用的次数，目前要求每台被调用5次
+    private int currentIndex = 0;    // 当前提供服务的机器号
+
+    public Server choose(ILoadBalancer lb, Object key) {
+        if (lb == null) {
+            return null;
+        }
+        Server server = null;
+
+        while (server == null) {
+            if (Thread.interrupted()) {
+                return null;
+            }
+            List<Server> upList = lb.getReachableServers();
+            List<Server> allList = lb.getAllServers();
+            System.out.println("allList:" + allList + "  upList:" + upList);
+            int serverCount = allList.size();
+            if (serverCount == 0) {
+                return null;
+            }
+
+
+//			private int total = 0; 			// 总共被调用的次数，目前要求每台被调用5次
+//			private int currentIndex = 0;	// 当前提供服务的机器号
+            if (total < 5) {
+                server = upList.get(currentIndex);
+                total++;
+            } else {
+                total = 0;
+                currentIndex++;
+                if (currentIndex >= upList.size()) {
+                    currentIndex = 0;
+                }
+            }
+
+
+            if (server == null) {
+                Thread.yield();
+                continue;
+            }
+
+            if (server.isAlive()) {
+                return (server);
+            }
+            server = null;
+            Thread.yield();
+        }
+
+        return server;
+    }
+
+    @Override
+    public Server choose(Object key) {
+        return choose(getLoadBalancer(), key);
+    }
+
+    @Override
+    public void initWithNiwsConfig(IClientConfig clientConfig) {
+        // TODO Auto-generated method stub
+    }
+
+}
+```
+
+# Feign
+
+# Hystrix（熔断器）
+
+## 一些概念
+
+### 服务雪崩
+
+多个微服务之间调用的时候，假设微服务A调用微服务B和微服务C，微服务B和微服务C又调用其他的微服务，这就是所谓的"**扇出**"，如果扇出的链路上某个微服务的调用响应时间过长或者不可用，对微服务A的调用就会占用越来越多的系统资源，进而引起系统崩溃，即所谓的“**雪崩效应**”。
+
+对于高流量的应用来说，单一的后端依赖可能会导致所有服务器上的所有资源都在几秒钟内饱和。比失败更槽糕的是，这些应用程序还可能导致服务之间的延迟增加，备份队列，线程和其他系统资源紧张，导致整个系统发生更多的级联故障。这些都表示需要对故障和延迟进行隔离和管理，以便单个依赖关系的失败，不能取消整个应用程序或系统。
+
+## Hystrix 是什么
+
+hystrxi是一个用于处理分布式系统的**延迟**和**容错**的开源库，在分布式系统里，许多依赖不可避免的会调用失败，比如超时、异常等待，hystrix能够保证在一个依赖出现问题的情况下，不会导致整体服务失败，避免级联故障，以提供分布式系统的弹性。
+
+当某个服务单元发生故障之后，通过断路器的故障监控（类似熔断保险丝），向调用方返回一个**符合预期的、可处理的备选响应(FallBack)**，而不是长时间的等待或者抛出调用方无法处理的异常。这样**保证了服务调用方的线程不会因调用故障服务被长时间占用不释放**，避免了故障在分布式系统中的蔓延，乃至雪崩。
+
+##Hystrix 能干什么
+
+hystrix能够进行：
+
+服务降级
+
+服务熔断
+
+服务限流
+
+接近实时的监控
