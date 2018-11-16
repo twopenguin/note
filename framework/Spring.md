@@ -2870,6 +2870,14 @@ Handler，HandlerMapping，HandlerAdapter 三个区别：
 
 ![doDispatcher](http://ohfk1r827.bkt.clouddn.com/doDispatcher.png)
 
+## 重要的类
+
+### HandlerExecutionChain
+
+### HandlerAdapter
+
+
+
 # SpringJPA
 
 
