@@ -1449,6 +1449,16 @@ AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
 
 5.
 
+### Spring 类
+
+#### BeanWrapper
+
+`BeanWrapper` 是 Spring 提供的一个用来操作JavaBean属性的工具，使用它可以直接修改一个对象的属性，示例如下：
+
+
+
+
+
 ### Spring猜想和验证
 
 #### 1，ImportBeanDefinitionRegistrar 的实现类是否会加入Spring容器
@@ -1530,7 +1540,29 @@ Bean Name:dog
 从 `JdbcTemplate` 的 `execute` 方法开始：
 
 ```java
+public class User {
+    private String userName;
 
+    public String getUserName() {
+        return userName;
+    }
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+}
+
+public class AppTest {
+
+    public static void main(String[] args) {
+        User user = new User();
+        BeanWrapper beanWrapper = PropertyAccessorFactory.forBeanPropertyAccess(user);
+        beanWrapper.setPropertyValue("userName","lishi");
+        System.out.println(user.getUserName());
+        PropertyValue propertyValue = new PropertyValue("userName", "zhagnsan");
+        beanWrapper.setPropertyValue(propertyValue);
+        System.out.println(user.getUserName());
+    }
+}
 ```
 
 
@@ -1598,6 +1630,7 @@ war exploded模式：将WEB工程以当前文件夹的位置关系上传到服�
     <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
     <init-param>
       <param-name>contextConfigLocation</param-name>
+      <!-- 如果不指定就默认使用WEB-INF/[ServletName]-servlet.xml -->
       <param-value>classpath:dispactorServlet.xml</param-value>
     </init-param>
   </servlet>
