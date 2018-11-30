@@ -193,6 +193,18 @@ List<City> cities = mapper.getAll();
 
 所有的配置都是存在在这个配置文件里面
 
+### 重要数据
+
+#### MappedStatement  放哪儿，什么时候生效
+
+`Configuration` 类中有如下字段：
+
+```java
+protected final Map<String, MappedStatement> mappedStatements = new StrictMap<MappedStatement>("Mapped Statements collection");
+```
+
+
+
 ###解析主配置文件
 
 ```java
@@ -251,6 +263,25 @@ public Configuration parse() {
       }
     }
   }
+```
+
+
+
+### 解析Mapper文件
+
+```java
+// XMLMapperBuilder 中负责 Mapper的解析
+public void parse() {
+if (!configuration.isResourceLoaded(resource)) {
+  configurationElement(parser.evalNode("/mapper"));
+  configuration.addLoadedResource(resource);
+  bindMapperForNamespace();
+}
+
+parsePendingResultMaps();
+parsePendingCacheRefs();
+parsePendingStatements();
+}
 ```
 
 
