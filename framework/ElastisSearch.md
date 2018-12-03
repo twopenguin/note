@@ -9,6 +9,29 @@ Elasticsearch也使用Java开发并使用Lucene作为其核心来实现所有索
 - 可以扩展到上百台服务器，处理PB级结构化或非结构化数据
 
 
+# 安装
+
+## Windows
+
+### 分布式
+
+在windows下面开了多个cmd窗口的时候，为了方便识别哪个是master， 哪个是slave，可以修改如下文件：
+
+`elasticsearch-6.5.1-master\bin\elasticsearch.bat`
+
+```vb
+@echo off
+
+setlocal enabledelayedexpansion
+setlocal enableextensions
+
+TITLE ES-Master ##这儿即为添加项目
+
+SET params='%*'
+```
+
+
+
 
 # 集群探索
 
@@ -110,3 +133,4 @@ And the response:
 ```
 
 Nothing out of the ordinary here other than a field, `found`, stating that we found a document with the requested ID 1 and another field, `_source`, which returns the full JSON document that we indexed from the previous step.
+
