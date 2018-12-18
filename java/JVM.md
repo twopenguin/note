@@ -992,3 +992,12 @@ java程序启动后，默认（请注意是默认）会在/tmp/hsperfdata_userNa
 ![1526615369891](../picture/1526615369891.png)
 
 在tmp 目录下面有这么一些关于JVM的问句，但是这个账户是 yzry_yanfa ，所以使用Jps 和 JMap之类的命令只能看见自己的用户名对应的信息
+
+
+
+# JVM调优
+
+## 如何查看当前jvm默认启动参数
+
+java -XX:+PrintFlagsFinal -version
+

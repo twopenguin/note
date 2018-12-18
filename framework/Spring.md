@@ -1636,6 +1636,38 @@ sql执行语句：
 
 Hibernate: select fxenterpri0_.id as id9_, fxenterpri0_.product_name asproduct_name  from fx_enterprise fxenterpri0_ order by fxenterpri0_.id desc
 
+# SpringAop
+
+先看一个实例：
+
+```java
+/**
+ * 静态调用session的拦截器
+ *
+ * @author fengshuonan
+ * @date 2016年11月13日 下午10:15:42
+ */
+@Aspect
+@Component
+public class SessionHolderInterceptor extends BaseController {
+
+    @Pointcut("execution(* cn.stylefeng.guns.*..controller.*.*(..))")
+    public void cutService() {
+
+    }
+
+    @Around("cutService()")
+    public Object sessionKit(ProceedingJoinPoint point) throws Throwable {
+        HttpSessionContext.put(super.getHttpServletRequest().getSession());
+        try {
+            return point.proceed();
+        } finally {
+            HttpSessionContext.remove();
+        }
+    }
+}
+```
+
 
 
 # 怎么看Spring的源码
