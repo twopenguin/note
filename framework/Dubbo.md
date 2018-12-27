@@ -788,6 +788,12 @@ dubbo支持的协议： dubbo、RMI、**hessian**、webservice、http、thrift
 
 ![1527305742067](../picture/1527305742067.png)
 
+Dubbo 支持四种类型的注册中心：
+
+
+
+
+
 # 多版本支持
 
 服务端这么配置
