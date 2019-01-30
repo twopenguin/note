@@ -1130,6 +1130,16 @@ protected <T> T getDefaultStrategy(ApplicationContext context, Class<T> strategy
 
 主要讲了 Spring MVC 自身创建过程，分析了 Spring MVC 中 Servlet 的三个层次：HttpServletBean、FrameworkServlet 和 DispatcherServlet。HttpServletBean 继承自 Java 的 HttpServlet，其作用是将配置的参数设置到相应的属性上；FrameworkServlet 初始化了 WebApplicationContext；DispatcherServlet 初始化了自身的 9 个组件。
 
+## ViewResolver
+
+SpringMVC 提供了很多的视图解析器
+
+如果使用的模板是JSP的话，那么就是`InternalResourceViewResolver`
+
+
+
+
+
 ## Spring MVC 流程
 
 分析 Spring MVC 是怎么处理请求的。首先分析 HttpServletBean、FrameworkServlet 和 DispatcherServlet 这三个 Servlet 的处理过程，最后分析 doDispatcher 的结构。
@@ -1334,3 +1344,59 @@ Handler，HandlerMapping，HandlerAdapter 三个区别：
 ### HandlerExecutionChain
 
 ### HandlerAdapter
+
+# 临时笔记
+
+## 模板寻址
+
+prefix + viewName + suffix
+
+```java
+view.setUrl(this.getPrefix() + viewName + this.getSuffix());
+```
+
+## Jsp Viewer 怎么拼页面
+
+
+
+InternalResourceViewResolver:
+
+```java
+    protected AbstractUrlBasedView buildView(String viewName) throws Exception {
+        InternalResourceView view = (InternalResourceView)super.buildView(viewName);
+        if(this.alwaysInclude != null) {
+            view.setAlwaysInclude(this.alwaysInclude.booleanValue());
+        }
+
+        view.setPreventDispatchLoop(true);
+        return view;
+    }
+```
+
+
+
+org.springframework.web.servlet.view.UrlBasedViewResolver
+
+```java
+    protected AbstractUrlBasedView buildView(String viewName) throws Exception {
+        Class<?> viewClass = this.getViewClass();
+        Assert.state(viewClass != null, "No view class");
+        AbstractUrlBasedView view = (AbstractUrlBasedView)BeanUtils.instantiateClass(viewClass);
+        //就是拼的关键
+        view.setUrl(this.getPrefix() + viewName + this.getSuffix());
+    }
+```
+
+
+
+## ViewResoler 和 View 的联系
+
+
+
+## JSP 的View JstlView
+
+## 小马哥 jsr 地址
+
+https://github.com/mercyblitz/jsr
+
+##国际化 Locale
