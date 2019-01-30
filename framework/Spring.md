@@ -1493,7 +1493,31 @@ AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
 
 `BeanWrapper` 是 Spring 提供的一个用来操作JavaBean属性的工具，使用它可以直接修改一个对象的属性，示例如下：
 
+```java
+public class User {
+    private String userName;
 
+    public String getUserName() {
+        return userName;
+    }
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+}
+
+public class AppTest {
+
+    public static void main(String[] args) {
+        User user = new User();
+        BeanWrapper beanWrapper = PropertyAccessorFactory.forBeanPropertyAccess(user);
+        beanWrapper.setPropertyValue("userName","lishi");
+        System.out.println(user.getUserName());
+        PropertyValue propertyValue = new PropertyValue("userName", "zhagnsan");
+        beanWrapper.setPropertyValue(propertyValue);
+        System.out.println(user.getUserName());
+    }
+}
+```
 
 
 
@@ -1577,32 +1601,6 @@ Bean Name:dog
 
 从 `JdbcTemplate` 的 `execute` 方法开始：
 
-```java
-public class User {
-    private String userName;
-
-    public String getUserName() {
-        return userName;
-    }
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-}
-
-public class AppTest {
-
-    public static void main(String[] args) {
-        User user = new User();
-        BeanWrapper beanWrapper = PropertyAccessorFactory.forBeanPropertyAccess(user);
-        beanWrapper.setPropertyValue("userName","lishi");
-        System.out.println(user.getUserName());
-        PropertyValue propertyValue = new PropertyValue("userName", "zhagnsan");
-        beanWrapper.setPropertyValue(propertyValue);
-        System.out.println(user.getUserName());
-    }
-}
-```
-
 
 
 # Spring 缓存
@@ -1684,5 +1682,33 @@ public class SessionHolderInterceptor extends BaseController {
 
 ## Spring 自定义标签
 
+`org.springframework.beans.factory.xml.BeanDefinitionParser`
 
+```java
+public interface BeanDefinitionParser {
+
+	/**
+	 * Parse the specified {@link Element} and register the resulting
+	 * {@link BeanDefinition BeanDefinition(s)} with the
+	 * {@link org.springframework.beans.factory.xml.ParserContext#getRegistry() BeanDefinitionRegistry}
+	 * embedded in the supplied {@link ParserContext}.
+	 * <p>Implementations must return the primary {@link BeanDefinition} that results
+	 * from the parse if they will ever be used in a nested fashion (for example as
+	 * an inner tag in a {@code <property/>} tag). Implementations may return
+	 * {@code null} if they will <strong>not</strong> be used in a nested fashion.
+	 * @param element the element that is to be parsed into one or more {@link BeanDefinition BeanDefinitions}
+	 * @param parserContext the object encapsulating the current state of the parsing process;
+	 * provides access to a {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}
+	 * @return the primary {@link BeanDefinition}
+	 */
+	BeanDefinition parse(Element element, ParserContext parserContext);
+
+}
+```
+
+
+
+# 问题抽离
+
+## 1.Spring 中对象注入的几种方式和区别
 
