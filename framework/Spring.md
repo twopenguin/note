@@ -1712,3 +1712,86 @@ public interface BeanDefinitionParser {
 
 ## 1.Spring 中对象注入的几种方式和区别
 
+## 2.注入原理
+
+相互注入：
+
+即一个bean引用了哪些bean，这个bean，被哪些bean引用，都分别记录在`dependentBeanMap` 和`dependenciesForBeanMap` 中
+
+`org.springframework.beans.factory.support.DefaultSingletonBeanRegistry`
+
+```java
+	public void registerDependentBean(String beanName, String dependentBeanName) {
+		String canonicalName = canonicalName(beanName);
+
+		synchronized (this.dependentBeanMap) {
+			Set<String> dependentBeans =
+					this.dependentBeanMap.computeIfAbsent(canonicalName, k -> new LinkedHashSet<>(8));
+			if (!dependentBeans.add(dependentBeanName)) {
+				return;
+			}
+		}
+
+		synchronized (this.dependenciesForBeanMap) {
+			Set<String> dependenciesForBean =
+					this.dependenciesForBeanMap.computeIfAbsent(dependentBeanName, k -> new LinkedHashSet<>(8));
+			dependenciesForBean.add(canonicalName);
+		}
+	}
+```
+
+@Autowired 此注解的处理是在`org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor` 中进行的
+
+此类有两个内部类：
+
+AutowiredFieldElement
+
+AutowiredMethodElement
+
+分别处理字段上使用`@Autowired`, 和方法上面使用`@Autowired` 
+
+这两个类的inject 就是用来给目标Bean 的字段或者方法设值
+
+```java
+if (arguments != null) {
+  try {
+    ReflectionUtils.makeAccessible(method);
+    method.invoke(bean, arguments);
+  }
+  catch (InvocationTargetException ex){
+    throw ex.getTargetException();
+  }
+}
+```
+
+# 临时笔记
+
+`BeanFactoryPostProcessor` 此接口在 `BeanFactory` 成功创建之后被调用
+
+
+
+`AnnotationConfigUtils#registerAnnotationConfigProcessors(BeanDefinitionRegistry, .Object)` 此方法中会注册很多的注解处理器
+
+
+
+`BeanDefinitionHolder` 是 `BeanDefinition` 的包装器，代码如下：
+
+```java
+public class BeanDefinitionHolder implements BeanMetadataElement {
+
+	private final BeanDefinition beanDefinition;
+
+	private final String beanName;
+
+	private final String[] aliases;
+}
+```
+
+
+
+
+
+
+
+
+
