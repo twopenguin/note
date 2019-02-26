@@ -524,6 +524,27 @@ Redis中
 
 会话缓存（Session Cache）、好友关系、队列、排行榜/计数器/限速器、
 
+# Redis 分布式锁
+
+第一个版本
+
+```shell
+set key value px milliseconds nx
+```
+
+事实上这类琐最大的缺点就是它加锁时只作用在一个Redis节点上，即使Redis通过sentinel保证高可用，如果这个master节点由于某些原因发生了主从切换，那么就会出现锁丢失的情况：
+
+1. 在Redis的master节点上拿到了锁；
+2. 但是这个加锁的key还没有同步到slave节点；
+3. master故障，发生故障转移，slave节点升级为master节点；
+4. 导致锁丢失。
+
+**第二个版本 RedLock**
+
+
+
+
+
 
 
 
