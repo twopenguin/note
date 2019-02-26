@@ -121,7 +121,67 @@ private void invokeAwareMethods(final String beanName, final Object bean) {
 
 ``
 
+# BeanDefinitionRegistry
 
+实现`BeanDefinition `的注册功能
+
+## 是什么
+
+是一个接口，只要是Bean工厂 或者 ApplicationContext 都会间接或者直接 实现`BeanDefinitionRegistry` 接口
+
+
+
+```java
+
+public interface BeanDefinitionRegistry extends AliasRegistry {
+
+	void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+			throws BeanDefinitionStoreException;
+	void removeBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
+	BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
+	boolean containsBeanDefinition(String beanName);
+	String[] getBeanDefinitionNames();
+	int getBeanDefinitionCount();
+	boolean isBeanNameInUse(String beanName);
+}
+
+```
+
+##举个例子
+
+`AnnotationConfigApplicationContext` 继承于`GenericApplicationContext` ,而我们就可以从`GenericApplicationContext` 类中来看到`BeanDefinitionRegistry` 接口的一些实现方法
+
+```java
+//GenericApplicationContext
+	private final DefaultListableBeanFactory beanFactory;
+
+	@Override
+	public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+			throws BeanDefinitionStoreException {
+
+		this.beanFactory.registerBeanDefinition(beanName, beanDefinition);
+	}
+```
+
+
+
+我们从上面的代码可以看出，ApplicationContext的 `BeanFactory` 是委托给 `DefaultListableBeanFactory` 的，所以，我们进入``DefaultListableBeanFactory` ` 的相关方法看看：
+
+```java
+//DefaultListableBeanFactory
+	private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
+	public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition){
+		//核心就这一行
+		this.beanDefinitionMap.put(beanName, beanDefinition);
+	}
+
+	public void removeBeanDefinition(String beanName) throws NoSuchBeanDefinitionException {
+		//也是核心就这一行
+		BeanDefinition bd = this.beanDefinitionMap.remove(beanName);
+	}
+```
+
+其实主要就是操作存放 beanDefinition 的 Map
 
 
 
