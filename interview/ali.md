@@ -142,6 +142,22 @@
 
 AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用applyBeanPostProcessors 的 before 和 after 方法，然后，这两处调用的中间，有个 `invokeInitMethods` 方法，进入方法，会调用 `InitializingBean` 类的 `afterPropertiesSet` 方法之后，然后会尝试调用 `invokeCustomInitMethod` 
 
+------
+
+**注解注册bean到ioc容器的几种方式**
+
+1. 在上面的配置类上加`@Service`或者`@Component`等注解，springboot会扫描启动类所在的包下面所有带有这些注解的类，实例化bean加到ioc容器。
+
+2. 使用`@Configuration`和`@Bean`注解来配置bean到ioc容器,这个类也需要在springboot启动类所在的包或者子包下面，否则无法扫到。
+
+3. 使用`@Import`注解
+
+   相信很多人对`@EnableScheduling` 、`@EnableCaching`等@Enablexxxx系列的注解都不陌生，它们就是使用的是@Import注解来实现开启xx功能的。
+
+
+
+------
+
 ### SpringBoot
 
 **SpringBoot starter 原理**
@@ -160,7 +176,7 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
 
 ------
 
-**starter 明明格式**
+**starter 命名格式**
 
 我们日常使用的Spring官方的Starter一般采取`spring-boot-starter-{name} `的命名方式，如 `spring-boot-starter-web `。
 
@@ -442,7 +458,13 @@ mysql 的 explain 命令，字段key如果为null ，表示没有使用索引
 
 ------
 
+**内存泄漏的可能原因**
 
+1. 静态集合类引起内存泄漏，如HashMap，ArrayList等
+2. 各种连接，比如数据库连接（dataSourse.getConnection()），网络连接(socket)和io连接，除非其显式的调用了其close（）方法将其连接关闭，否则是不会自动被GC 回收的。
+3. 单例模式，不正确使用单例模式是引起内存泄漏的一个常见问题，单例对象在初始化后将在JVM的整个生命周期中存在（以静态变量的方式），如果单例对象持有外部的引用。
+
+------
 
 
 

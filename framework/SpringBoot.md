@@ -59,6 +59,65 @@ application.setBannerMode(Banner.Mode.OFF);
 
 
 
+# 注解
+
+## @ConfigurationProperties
+
+`@ConfigurationProperties` 就可以将配置文件自动设置到该 Bean 对象
+
+### 如何使用
+
+我们可以在`application.properties` 文件中配置
+
+```pr
+server.port=8080
+server.contextPath=/hello
+```
+
+是因为有如下的一个配置类
+
+```java
+@ConfigurationProperties(
+    prefix = "server",
+    ignoreUnknownFields = true
+)
+public class ServerProperties implements EmbeddedServletContainerCustomizer, EnvironmentAware, Ordered {
+    private Integer port;
+    private InetAddress address;
+    private String contextPath;
+}
+```
+
+
+
+## @EnableAutoConfiguration
+
+可以将指定带有 `@ConfigurationProperties` 的类，注册成 BeanDefinition ，从而创建成 Bean 对象。
+
+### 是什么
+
+```java
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@AutoConfigurationPackage
+@Import({EnableAutoConfigurationImportSelector.class})
+public @interface EnableAutoConfiguration {
+    String ENABLED_OVERRIDE_PROPERTY = "spring.boot.enableautoconfiguration";
+    Class<?>[] exclude() default {};
+    String[] excludeName() default {};
+}
+```
+
+从`@Import` 注解上可以看出 使用 `EnableConfigurationPropertiesImportSelector` 来处理
+
+### EnableAutoConfigurationImportSelector
+
+
+
+
+
 # 疑问
 
 1.为什么主启动类所在的目录下的所以目录都是`ComponentScan` 所能扫描的范围？
