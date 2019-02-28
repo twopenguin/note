@@ -143,3 +143,37 @@ git clone -b reconsitution/dev http://zhangyida@www.vc.git.51yiy.top/r/vc-busine
 ```
 
 ####  
+
+##常见错误
+
+###SSL_connect
+
+错误描述：
+
+git push github失败，提示：SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443
+
+今天用IntelliJ IDEA提交完代码后，偶然之间发现没有push到Github上，再仔细一看，之前好几次的push都是失败的（呜呜，我的Contribution） 。报错都是一样的：
+
+Push failed: Failed with error: unable to access 'https://github.com/weidongcao/bigdata/': 
+OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to github.com:443
+1
+2
+然后再换sourcetree和git命令行提交都提交不了， 
+然后去网上根据这个错误提示搜了一下，发现是因为Git的Http代理的问题，Git支持三种协议：git://、ssh://和http://，本来push的时候应该走ssh隧道的，但是因为设置了http代理，所以就走了http的代理，于是就提交不了了。 
+
+OK，找到原因了，那就取消http代理吧：
+
+解决办法
+在github项目在本地的根目录下打开git命令行， 
+执行下面的命令：
+
+```shell
+git config --global --unset http.proxy
+```
+
+然后再次使用IntelliJ IDEA push，OK，问题解决，本来还想着需要再设置一下ssh呢，没有想到不用 
+
+
+
+
+
