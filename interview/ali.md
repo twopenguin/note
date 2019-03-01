@@ -155,7 +155,6 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
    相信很多人对`@EnableScheduling` 、`@EnableCaching`等@Enablexxxx系列的注解都不陌生，它们就是使用的是@Import注解来实现开启xx功能的。
 
 
-
 ------
 
 ### SpringBoot
@@ -247,6 +246,8 @@ LinkedList 基于链表的数据结构，地址是任意的，所以在开辟内
 ------
 
 **concurrenthashmap 的size实现**
+
+在 jdk 1.8 提供了一个新的计数方法`mappingCount `, 它以长整型long返回map中映射的数目。我们应该尽量使用这个新方法，而不是老的size方法， size方法返回的类型为int。 
 
 ------
 

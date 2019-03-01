@@ -1,6 +1,14 @@
-# Aware
 
-## 是什么
+
+
+
+# 接口
+
+
+
+## Aware
+
+### 是什么
 
 IOC 容器的 bean 实现了此接口，可以把容器中的组件注入给Bean，
 
@@ -22,11 +30,11 @@ public interface ApplicationContextAware extends Aware {
 
 以`ApplicationContextAware` 为例来看看如何实现向Bean 注入组件的功能
 
-## ApplicationContextAware
+### ApplicationContextAware
 
 //TODO
 
-## 几个特殊的Aware子接口
+### 几个特殊的Aware子接口
 
 先看看`AbstractAutowireCapableBeanFactory#initializeBean`
 
@@ -90,9 +98,9 @@ private void invokeAwareMethods(final String beanName, final Object bean) {
 
 
 
-# BeanDefinition
+## BeanDefinition
 
-## 是什么
+### 是什么
 
 1. 一个Bean 对应一个 `BeanDefinition`
 2. Spring 也就是将用户定义的 Bean 表示成 IoC 容器的内部数据结构：BeanDefinition
@@ -111,28 +119,27 @@ private void invokeAwareMethods(final String beanName, final Object bean) {
 - 如果配置文件中定义了父 `<bean>` 和 子 `<bean>` ，则父 `<bean>` 用 RootBeanDefinition 表示，子 `<bean>` 用 ChildBeanDefinition 表示，而没有父 `<bean>` 的就使用RootBeanDefinition 表示。
 - GenericBeanDefinition 为一站式服务类。😈 这个解释一脸懵逼？没事，继续往下看。
 
-## 存在哪儿
+### 存在哪儿
 
 
 
-## 在哪儿创建
+### 在哪儿创建
 
 在类`BeanDefinitionParserDelegate` 中的 `createBeanDefinition` 方法,看看这儿方法
 
 ``
 
-# BeanDefinitionRegistry
+## BeanDefinitionRegistry
 
 实现`BeanDefinition `的注册功能
 
-## 是什么
+### 是什么
 
 是一个接口，只要是Bean工厂 或者 ApplicationContext 都会间接或者直接 实现`BeanDefinitionRegistry` 接口
 
 
 
 ```java
-
 public interface BeanDefinitionRegistry extends AliasRegistry {
 
 	void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
@@ -147,7 +154,7 @@ public interface BeanDefinitionRegistry extends AliasRegistry {
 
 ```
 
-##举个例子
+### 举个例子
 
 `AnnotationConfigApplicationContext` 继承于`GenericApplicationContext` ,而我们就可以从`GenericApplicationContext` 类中来看到`BeanDefinitionRegistry` 接口的一些实现方法
 
@@ -185,9 +192,80 @@ public interface BeanDefinitionRegistry extends AliasRegistry {
 
 
 
-# BeanPostProcessor 
+## BeanDefinitionRegistryPostProcessor
 
-## 是什么
+
+
+### 举个例子
+
+```java
+@Component
+public class MyBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor{
+
+	@Override
+	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+		System.out.println("MyBeanDefinitionRegistryPostProcessor...bean的数量："+beanFactory.getBeanDefinitionCount());
+	}
+
+	//BeanDefinitionRegistry Bean定义信息的保存中心，以后BeanFactory就是按照BeanDefinitionRegistry里面保存的每一个bean定义信息创建bean实例；
+	@Override
+	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
+		System.out.println("postProcessBeanDefinitionRegistry...bean的数量："+registry.getBeanDefinitionCount());
+		//RootBeanDefinition beanDefinition = new RootBeanDefinition(Blue.class);
+		AbstractBeanDefinition beanDefinition = BeanDefinitionBuilder.rootBeanDefinition(Blue.class).getBeanDefinition();
+		registry.registerBeanDefinition("hello", beanDefinition);
+	}
+
+}
+```
+
+
+
+
+
+## BeanFactoryPostProcessor
+
+```
+Allows for custom modification of an application context's bean definitions,
+adapting the bean property values of the context's underlying bean factory.
+```
+
+允许自定义修改应用程序上下文的 bean 定义,基于bean 工厂来调整 bean 的属性值
+
+```java
+@FunctionalInterface
+public interface BeanFactoryPostProcessor {
+
+	void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
+
+}
+```
+
+### 举个例子
+
+```java
+@Component
+public class MyBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
+
+	@Override
+	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+		System.out.println("MyBeanFactoryPostProcessor...postProcessBeanFactory...");
+		int count = beanFactory.getBeanDefinitionCount();
+		String[] names = beanFactory.getBeanDefinitionNames();
+		System.out.println("当前BeanFactory中有"+count+" 个Bean");
+		System.out.println(Arrays.asList(names));
+	}
+
+}
+```
+
+
+
+
+
+## BeanPostProcessor
+
+### 是什么
 
 用来在Bean创建好的时候，对Bean做额外的操作
 
@@ -212,7 +290,7 @@ public interface BeanPostProcessor {
 
 ```
 
-## 哪儿被调用
+### 哪儿被调用
 
 在类`AbstractAutowireCapableBeanFactory`中
 
@@ -271,11 +349,69 @@ public interface BeanPostProcessor {
 	}
 ```
 
+## ImportBeanDefinitionRegistrar
 
 
-# InitializingBean（初始化Bean）
 
-## 是什么
+### 举个例子
+
+```java
+public class MyImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
+
+	/**
+	 * AnnotationMetadata：当前类的注解信息
+	 * BeanDefinitionRegistry:BeanDefinition注册类；
+	 * 		把所有需要添加到容器中的bean；调用
+	 * 		BeanDefinitionRegistry.registerBeanDefinition手工注册进来
+	 */
+	@Override
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+		
+		boolean definition = registry.containsBeanDefinition("com.atguigu.bean.Red");
+		boolean definition2 = registry.containsBeanDefinition("com.atguigu.bean.Blue");
+		if(definition && definition2){
+			//指定Bean定义信息；（Bean的类型，Bean。。。）
+			RootBeanDefinition beanDefinition = new RootBeanDefinition(RainBow.class);
+			//注册一个Bean，指定bean名
+			registry.registerBeanDefinition("rainBow", beanDefinition);
+		}
+	}
+
+}
+```
+
+
+
+## ImportSelector
+
+
+
+### 举个例子
+
+```java
+//自定义逻辑返回需要导入的组件
+public class MyImportSelector implements ImportSelector {
+
+	//返回值，就是到导入到容器中的组件全类名
+	//AnnotationMetadata:当前标注@Import注解的类的所有注解信息
+	@Override
+	public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+		// TODO Auto-generated method stub
+		//importingClassMetadata
+		//方法不要返回null值
+		return new String[]{"com.atguigu.bean.Blue","com.atguigu.bean.Yellow"};
+	}
+
+}
+```
+
+
+
+
+
+## InitializingBean（初始化Bean）
+
+### 是什么
 
 由这个接口唯一的一个方法的名字可以看出，大概实在Bean创建好，并且 属性设值之后被调用
 
@@ -289,7 +425,7 @@ public interface InitializingBean {
 
 
 
-## 哪儿被调用
+### 哪儿被调用
 
 还是进入Bean的初始化方法：
 
@@ -372,7 +508,7 @@ public interface InitializingBean {
 
 看到这儿我们已经知道接口`InitializingBean `的 `afterPropertiesSet` 在哪儿调用的了，刚刚我们看到了自定义的初始化方法也会在这儿被调用，那么我们不妨也看看 `invokeCustomInitMethod`：
 
-##自定义初始化方法调用 invokeCustomInitMethod 
+### 自定义初始化方法调用 invokeCustomInitMethod
 
 ```java
 //AbstractAutowireCapableBeanFactory
@@ -389,9 +525,6 @@ public interface InitializingBean {
 
 1. 自定义的初始化方法是被框架使用反射调用的
 2. 自定义的初始化方法是存储在 `BeanDefinition` 的 `initMethodName` 属性中
-
-
-
 
 
 
