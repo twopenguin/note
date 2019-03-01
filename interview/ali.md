@@ -241,7 +241,7 @@ LinkedList 基于链表的数据结构，地址是任意的，所以在开辟内
 
 1.7是基于 分段锁，也就是 `Segment`      ,这个类继承与        `ReentrantLock` ，其put方法，火尝试获取锁
 
-1.8
+1.8中放弃了`Segment`臃肿的设计，取而代之的是采用`Node` + `CAS` + `Synchronized`来保证并发安全进行实现，
 
 ------
 
