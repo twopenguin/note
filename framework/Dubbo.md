@@ -1029,3 +1029,10 @@ dubbo提供以下集群容错模式:
 范围越小的有限，消费端优先于提供端
 
 reference：method > service:method >reference > service > consumer 统一配置 > provider 统一配置
+
+
+
+# Dubbo 注解
+
+## @Reference
+
