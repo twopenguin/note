@@ -55,6 +55,8 @@ $ git clone git://github.com/schacon/grit.git mygrit
 
 ### git checkout [分支名] 切换分支
 
+### git checkout -b <分支名> 创建并切换分支
+
 ### git commit(提交暂存区到仓库)
 
 git commit -m “这是提交的什么内容！”

@@ -2,6 +2,24 @@
 typora-copy-images-to: ..\picture
 ---
 
+# Netty 简介
+
+```
+Netty is an asynchronous event-driven network application framework
+for rapid development of maintainable high performance protocol servers & clients. 
+```
+
+异步的、事件驱动
+
+## Feature
+
+- Unified API for various transport types - blocking and non-blocking socket
+- Based on a flexible and extensible event model which allows clear separation of concerns
+- Highly customizable thread model - single thread, one or more thread pools such as **SEDA**
+- True connectionless datagram socket support (since 3.1)
+
+ps：重点了解一下**SEDA**
+
 # Netty 相关API
 
 ## ByteBuf
@@ -13,6 +31,62 @@ typora-copy-images-to: ..\picture
 
 
 # Netty 核心组件
+
+## ByteBuf
+
+`io.netty.buffer.ByteBuf` ，实现 ReferenceCounted 、Comparable 接口，ByteBuf **抽象类**。注意，ByteBuf 是一个抽象类，而不是一个接口。当然，实际上，它主要定义了**抽象**方法，**很少**实现对应的方法。
+
+关于 `io.netty.util.ReferenceCounted` 接口，对象引用计数器接口。
+
+- 对象的初始引用计数为 1 。
+- 当引用计数器值为 0 时，表示该对象不能再被继续引用，只能被释放。
+
+
+
+因为 ByteBuf 的方法非常多，所以笔者对它的方法做了简单的归类：
+
+### 基础信息
+
+```java
+public abstract int capacity(); // 容量
+public abstract ByteBuf capacity(int newCapacity);
+public abstract int maxCapacity(); // 最大容量
+
+public abstract ByteBufAllocator alloc(); // 分配器，用于创建 ByteBuf 对象。
+
+@Deprecated
+public abstract ByteOrder order(); // 字节序，即大小端。推荐阅读 http://www.ruanyifeng.com/blog/2016/11/byte-order.html
+@Deprecated
+public abstract ByteBuf order(ByteOrder endianness);
+
+public abstract ByteBuf unwrap(); // 获得被包装( wrap )的 ByteBuf 对象。
+
+public abstract boolean isDirect(); // 是否 NIO Direct Buffer
+
+public abstract boolean isReadOnly(); // 是否为只读 Buffer
+public abstract ByteBuf asReadOnly();
+
+public abstract int readerIndex(); // 读取位置
+public abstract ByteBuf readerIndex(int readerIndex);
+public abstract int writerIndex(); // 写入位置
+public abstract ByteBuf writerIndex(int writerIndex);
+public abstract ByteBuf setIndex(int readerIndex, int writerIndex); // 设置读取和写入位置
+public abstract int readableBytes(); // 剩余可读字节数
+public abstract int writableBytes(); // 剩余可写字节数
+public abstract int maxWritableBytes();
+public abstract boolean isReadable();
+public abstract boolean isReadable(int size);
+public abstract boolean isWritable();
+public abstract boolean isWritable(int size);
+public abstract ByteBuf ensureWritable(int minWritableBytes);
+public abstract int ensureWritable(int minWritableBytes, boolean force);
+public abstract ByteBuf markReaderIndex(); // 标记读取位置
+public abstract ByteBuf resetReaderIndex();
+public abstract ByteBuf markWriterIndex(); // 标记写入位置
+public abstract ByteBuf resetWriterIndex();
+```
+
+
 
 ## Channel
 
@@ -65,6 +139,35 @@ executor.execute(writer);
 
 此外，这种方法保证了写入的消息以相同的顺序通过写入它们的方法。想了解所有方法的使用可以参考Netty API文档。
 
+### ChannelConfig
+
+`Channel` 的配置接口
+
+### Channel 之 accept 
+
+本文分享 Netty NIO 服务端 NioServerSocketChannel 接受( **accept** )客户端连接的过程。简单来说：
+
+1. 服务端 NioServerSocketChannel 的 boss EventLoop 线程轮询是否有新的客户端连接接入。
+2. 当轮询到有新的连接接入，封装连入的客户端的 SocketChannel 为 Netty NioSocketChannel 对象。
+3. 选择一个服务端 NioServerSocketChannel 的 worker EventLoop ，将客户端的 NioSocketChannel 注册到其上。并且，注册客户端的 NioSocketChannel 的读事件，开始轮询该客户端是否有数据写入。
+
+
+
+## ChannelPipeline
+
+事件如何在 `ChannelPipeline` 中流动：
+
+- [x] B01：Inbound 事件是【通知】事件, 当某件事情已经就绪后, 通知上层.
+- [x] B02：Inbound 事件发起者是 Unsafe
+- [x] B03：Inbound 事件的处理者是 TailContext, 如果用户没有实现自定义的处理方法, 那么Inbound 事件默认的处理者是 TailContext, 并且其处理方法是空实现.
+- [x] B04：Inbound 事件在 Pipeline 中传输方向是 `head`( 头 ) -> `tail`( 尾 )
+- [x] B05：在 ChannelHandler 中处理事件时, 如果这个 Handler 不是最后一个 Handler, 则需要调用 `ctx.fireIN_EVT` (例如 `ctx.fireChannelActive` ) 将此事件继续传播下去. 如果不这样做, 那么此事件的传播会提前终止.
+- [x] B06：Inbound 事件流: `Context.fireIN_EVT` -> `Connect.findContextInbound` -> `nextContext.invokeIN_EVT` -> `nextHandler.IN_EVT` -> `nextContext.fireIN_EVT`
+
+
+
+
+
 ## ChannelHandler
 
 此类的特点：
@@ -81,7 +184,32 @@ executor.execute(writer);
 
 > 通知用户特定事件
 
-2. 这些ChannelHandler实例添加到ChannelPipeline中，
+2. 这些ChannelHandler实例添加到ChannelPipeline中
+3. 通常`ChannelHandler` 只需要继承`ChannelHandlerAdapter` 类覆盖自己关心的方法即可
+
+## ChannelHandlerContext
+
+每个`ChannelHandler`被添加到`ChannelPipeline`后，都会创建一个`ChannelHandlerContext`并与之创建的`ChannelHandler`关联绑定。
+ChannelHandlerContext允许ChannelHandler与其他的ChannelHandler实现进行交互，这是相同ChannelPipeline的一部分。
+ChannelHandlerContext不会改变添加到其中的ChannelHandler，因此它是安全的。 
+
+```java
+public interface ChannelHandlerContext {
+
+    Channel getChannel();
+    ChannelPipeline getPipeline();
+    String getName();
+    ChannelHandler getHandler();
+    boolean canHandleUpstream();
+    boolean canHandleDownstream();
+    void sendUpstream(ChannelEvent e);
+    void sendDownstream(ChannelEvent e);
+    Object getAttachment();
+    void setAttachment(Object attachment);
+}
+```
+
+
 
 ## EventLoopGroup
 
@@ -578,6 +706,93 @@ ChannelPipeline 中删除. 上面的分析过程, 可以用如下图片展示:
 
 分析到这里, 我们已经简单了解了自定义的 handler 是如何添加到 ChannelPipeline 中的, 不过限于主题与篇幅的原因, 我没有在这里详细展开 ChannelPipeline 的底层机制, 我打算在下一篇 **Netty 源码分析之 二 贯穿Netty 的大动脉 ── ChannelPipeline** 中对这个问题进行深入的探讨.
 
+## 事件流动
+
+###主流程
+
+事件的源头都来自`Unsafe` 类，以客户端连接事件为例子
+
+```java
+//io.netty.channel.AbstractChannel.AbstractUnsafe#bind
+@Override
+public final void bind(final SocketAddress localAddress, final ChannelPromise promise) {
+	assertEventLoop();
+
+	if (!promise.setUncancellable() || !ensureOpen(promise)) {
+		return;
+	}
+	boolean wasActive = isActive();
+	doBind(localAddress);
+	if (!wasActive && isActive()) {
+		invokeLater(new Runnable() {
+			@Override
+			public void run() {
+              // 看关键代码
+				pipeline.fireChannelActive();
+			}
+		});
+	}
+
+	safeSetSuccess(promise);
+}
+```
+
+进入 `io.netty.channel.DefaultChannelPipeline`  的 `fireChannelActive` 方法
+
+```java
+@Override
+public final ChannelPipeline fireChannelActive() {
+	AbstractChannelHandlerContext.invokeChannelActive(head);
+	return this;
+}
+```
+
+在方法内部，会调用 `AbstractChannelHandlerContext#invokeChannelActive(final AbstractChannelHandlerContext next)` 方法，而方法参数是 `head` 
+
+`AbstractChannelHandlerContext#invokeChannelActive(final AbstractChannelHandlerContext next)` **静态**方法，代码如下：
+
+```java
+static void invokeChannelActive(final AbstractChannelHandlerContext next) {
+    // 获得下一个 Inbound 节点的执行器
+	EventExecutor executor = next.executor();
+    // 调用下一个 Inbound 节点的 Channel active 方法
+	if (executor.inEventLoop()) {
+		next.invokeChannelActive();
+	} else {
+		executor.execute(new Runnable() {
+			@Override
+			public void run() {
+				next.invokeChannelActive();
+			}
+		});
+	}
+}
+```
+
+
+
+```java
+private void invokeChannelActive() {
+    // 判断是否符合的 ChannelHandler
+	if (invokeHandler()) {
+		try {
+            // 调用该 ChannelHandler 的 Channel active 方法
+			((ChannelInboundHandler) handler()).channelActive(this);
+		} catch (Throwable t) {
+            // 通知 Inbound 事件的传播，发生异常
+			notifyHandlerException(t);
+		}
+	} else {
+        // 跳过，传播 Inbound 事件给下一个节点
+		fireChannelActive();
+	}
+}
+```
+
+调用 `#invokeHandler()` 方法，判断是否符合的 ChannelHandler 。
+
+
+
 # codec framework
 
 对于请求协议的编码解码，当然是可以按照协议格式自己操作ChannelBuffer中的字节数据。另一方面，Netty也做了几个很实用的codec helper，这里给出简单的介绍。
@@ -587,3 +802,25 @@ decode：解码
 encode：编码
 
 Codec：如果一个类是这个结尾就是表示是双工的，什么都干，既要编码也要解码
+
+## Future
+
+`Future` 用于获取异步操作的结果
+
+### ChannelFuture
+
+此类用来获取异步操作的结果
+
+## Promise
+
+`Promise` 是可写的`Future`, Future 自身并没有写操作相关的接口，Netty 通过Promise 进行扩展，用于设置I/O操作的结果。
+
+Netty 发起I/O操作的时候，会创建一个新的Promise 对象，例如调用`ChannelHandlerContext` 的write (Object, Object)方法时，会创建一个新的 `ChannelPromise`,
+
+```java
+//AbstractChannelHandlerContext
+public ChannelPromise newPromise() {
+        return new DefaultChannelPromise(this.channel(), this.executor());
+    }
+```
+
