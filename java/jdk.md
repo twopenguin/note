@@ -1,3 +1,28 @@
+# JDK 源码
+
+## 集合
+
+### Map
+
+#### LinkedHashMap(1.8)
+
+##### 为啥是有序的
+
+因为`LinkedHashMap`的Entry节点是使用双向链表来维持插入的顺序
+
+```java
+static class Entry<K,V> extends HashMap.Node<K,V> {
+  Entry<K,V> before, after;
+  Entry(int hash, K key, V value, Node<K,V> next) {
+    super(hash, key, value, next);
+  }
+}
+```
+
+
+
+
+
 # Java URL 协议扩展
 
 ## 关键类

@@ -1039,5 +1039,4 @@ reference：method > service:method >reference > service > consumer 统一配置
 # Dubbo 小知识点
 
 1. dubbo 调用默认超时时间？1秒，在`com.alibaba.dubbo.common.Constants` 中
-2. ​
 
