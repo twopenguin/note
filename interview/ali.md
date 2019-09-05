@@ -1,4 +1,4 @@
-# 阿里面试题
+# 归纳总结
 
 1.项目中学到了什么技术
 
@@ -78,7 +78,31 @@
 
 19.说下你知道的排序算法
 
-## 基础
+## Java基础
+
+### 反射
+
+#### 反射的原理
+
+
+
+#### 反射创建类实例的三种方式是什么
+
+
+
+#### 反射中，Class.forName和ClassLoader区别 
+
+
+
+### 设计模式
+
+#### 单例
+
+##### 写出三种单例模式实现 
+
+### 请列出5个运行时异常
+
+### 泛型的存在是用来解决什么问题
 
 
 
@@ -118,9 +142,9 @@
 
 
 
-------
 
-**Spring bean的生命周期**
+
+####Spring bean的生命周期
 
 实例化 `BeanFactoryPostProcessor` 实现类 ,
 
@@ -130,23 +154,27 @@
 
 实例化  InstantiationAwareBeanPostProcessor 实现类，它也是 `extends BeanPostProcessor`
 
+#### 讲讲Spring加载流程
+
+#### Spring AOP的实现原理
+
+#### 讲讲Spring事务的传播属性
+
+#### Spring如何管理事务的
+
+####Spring怎么解决循环依赖
 
 
 
+####XML中配置init，destroy方法怎么可以做到调用具体的方法？
 
 
-
-------
-
-**XML中配置init，destroy方法怎么可以做到调用具体的方法？**
-
-------
 
 AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用applyBeanPostProcessors 的 before 和 after 方法，然后，这两处调用的中间，有个 `invokeInitMethods` 方法，进入方法，会调用 `InitializingBean` 类的 `afterPropertiesSet` 方法之后，然后会尝试调用 `invokeCustomInitMethod` 
 
-------
 
-**注解注册bean到ioc容器的几种方式**
+
+####注解注册bean到ioc容器的几种方式
 
 1. 在上面的配置类上加`@Service`或者`@Component`等注解，springboot会扫描启动类所在的包下面所有带有这些注解的类，实例化bean加到ioc容器。
 
@@ -157,11 +185,13 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
    相信很多人对`@EnableScheduling` 、`@EnableCaching`等@Enablexxxx系列的注解都不陌生，它们就是使用的是@Import注解来实现开启xx功能的。
 
 
-------
+### SpringMVC
+
+#### Springmvc 中DispatcherServlet初始化过程
 
 ### SpringBoot
 
-**SpringBoot starter 原理**
+####SpringBoot starter 原理
 
 首先说说原理，我们知道使用一个公用的starter的时候，只需要将相应的依赖添加的Maven的配置文件当中即可，免去了自己需要引用很多依赖类，并且SpringBoot会自动进行类的自动配置。那么 SpringBoot 是如何知道要实例化哪些类，并进行自动配置的呢？ 下面简单说一下。
 
@@ -175,15 +205,19 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
 
 
 
-------
 
-**starter 命名格式**
+
+####starter 命名格式
 
 我们日常使用的Spring官方的Starter一般采取`spring-boot-starter-{name} `的命名方式，如 `spring-boot-starter-web `。
 
 而非官方的Starter，官方建议 `artifactId` 命名应遵循`{name}-spring-boot-starter `的格式。 例如：`ysc-spring-boot-starter ` 。
 
-------
+
+
+### Dubbo
+
+### Mybatis
 
 
 
@@ -209,9 +243,9 @@ https：443
 
 ## Jdk 源码
 
-###集合
+###List
 
-**ArralList和LinkedList区别**
+####ArralList和LinkedList区别
 
 ArrayList 是实现了基于动态数组的数据结构，因为地址连续，一旦数据存储好了，查询操作效率会比较高（在内存里是连着放的）。
 
@@ -221,9 +255,15 @@ LinkedList 基于链表的数据结构，地址是任意的，所以在开辟内
 
 因为 LinkedList 要移动指针，所以查询操作性能比较低。
 
-------
 
-**hashMap和hashtable区别**
+
+####如果存相同数据，ArrayList和LinkedList谁占用空间更大
+
+LinkedList 明显更大，因为每个节点有很多的额外数据，比如向前和向后的索引
+
+###Map
+
+####HashMap和Hashtable区别
 
 - 1、Hashtable 继承 Dictionary ，HashMap 继承的是 Java2 出现的 Map 接口。
 - 2、HashMap 去掉了 Hashtable 的 contains 方法，但是加上了 containsValue 和 containsKey 方法。
@@ -237,35 +277,45 @@ LinkedList 基于链表的数据结构，地址是任意的，所以在开辟内
 - 一是，HashTable 是遗留类，内部实现很多没优化和冗余。
 - 二是，即使在多线程环境下，现在也有同步的 ConcurrentHashMap 替代，没有必要因为是多线程而用 Hashtable 。
 
-------
+#### 为什么HashMap的容量是2的幂次？
 
-**concurrenthashmap是怎么做到线程安全的**
+1. 因为位运算的速度比取模快  
+2. 如果要使用为位运算取模那么使用这种方式： return h & (length-1);   
+3. 使用这种位运算取模的方式，只有当容量为2的幂次的时候，才能使用所有空间
 
-1.7是基于 分段锁，也就是 `Segment`      ,这个类继承与        `ReentrantLock` ，其put方法，火尝试获取锁
 
-1.8中放弃了`Segment`臃肿的设计，取而代之的是采用`Node` + `CAS` + `Synchronized`来保证并发安全进行实现，
 
-------
-
-**concurrenthashmap 的size实现**
-
-在 jdk 1.8 提供了一个新的计数方法`mappingCount `, 它以长整型long返回map中映射的数目。我们应该尽量使用这个新方法，而不是老的size方法， size方法返回的类型为int。 
-
-------
-
-**如果存相同数据，ArrayList和LinkedList谁占用空间更大**
-
-LinkedList 明显更大，因为每个节点有很多的额外数据，比如向前和向后的索引
-
-------
-
-**hashmap在并发情况下会出现什么现象**
+####HashMap在并发情况下会出现什么现象
 
 1、多线程put操作后，get操作导致死循环。
 2、多线程put非NULL元素后，get操作得到NULL值。
 3、多线程put操作，导致元素丢失。
 
 http://www.cnblogs.com/ITtangtang/p/3966467.html
+
+
+
+####ConcurrentHashmap是怎么做到线程安全的
+
+1.7是基于 分段锁，也就是 `Segment`      ,这个类继承与        `ReentrantLock` ，其put方法，火尝试获取锁
+
+1.8中放弃了`Segment`臃肿的设计，取而代之的是采用`Node` + `CAS` + `Synchronized`来保证并发安全进行实现，
+
+
+
+
+
+####**ConcurrentHashmap的size实现**
+
+在 jdk 1.8 提供了一个新的计数方法`mappingCount `, 它以长整型long返回map中映射的数目。我们应该尽量使用这个新方法，而不是老的size方法， size方法返回的类型为int。 
+
+
+
+
+
+
+
+
 
 ------
 
@@ -325,23 +375,21 @@ wait（三个）、notify、notifyAll、hashcode、equles、toString、clone、g
 
 
 
-------
+
 
 ## 并发
 
-happens before原理
+###偏理论
+
+####happens before原理
 
 
 
-------
+####volatile 实现原理
 
-**volatile 实现原理**
+###并发包
 
-
-
-------
-
-### CyclicBarrier和CountDownLatch的区别
+####CyclicBarrier和CountDownLatch的区别
 
 CountDownLatch：一个或者多个线程，等待其他多个线程完成某件事情之后才能执行
 
@@ -400,34 +448,28 @@ main function is finished.
 队友0, 通过了第2个障碍物, 使用了 2.784s
 ```
 
+##数据库
 
+###Mysql
 
-------
-
-
-
-------
-
-## Mysql
-
-**查看SQL是不是使用了索引，有哪些工具**
+####查看SQL是不是使用了索引，有哪些工具
 
 mysql 的 explain 命令，字段key如果为null ，表示没有使用索引
 
 ------
 
-**SQL优化的常见方法有哪些**
+####SQL优化的常见方法有哪些
 
-　1.对查询进行优化，应尽量避免全表扫描，首先应考虑在 where 及 order by 涉及的列上建立索引。 
-　　2.应尽量避免在 where 子句中对字段进行 null 值判断，否则将导致引擎放弃使用索引而进行全表扫描，如：select id from t where num is null可以在num上设置默认值0，确保表中num列没有null值，然后这样查询：select id from t where num=0 
-　　3.应尽量避免在 where 子句中使用!=或<>操作符，否则引擎将放弃使用索引而进行全表扫描。 
-　　4.应尽量避免在 where 子句中使用or 来连接条件，否则将导致引擎放弃使用索引而进行全表扫描，如：select id from t where num=10 or num=20可以这样查询：select id from t where num=10 union all select id from t where num=20 
-　　5.in 和 not in 也要慎用，否则会导致全表扫描，如：select id from t where num in(1,2,3) 对于连续的数值，能用 between 就不要用 in 了：select id from t where num between 1 and 3 
-　　6.避免使用通配符。下面的查询也将导致全表扫描：select id from t where name like ‘李%’若要提高效率，可以考虑全文检索。 
-　　7.如果在 where 子句中使用参数，也会导致全表扫描。因为SQL只有在运行时才会解析局部变量，但优化程序不能将访问计划的选择推迟到运行时；它必须在编译时进行选择。然而，如果在编译时建立访问计划，变量的值还是未知的，因而无法作为索引选择的输入项。如下面语句将进行全表扫描：select id from t where num=@num可以改为强制查询使用索引：select id from t with(index(索引名)) where num=@num 
-　　8.应尽量避免在 where 子句中对字段进行表达式操作，这将导致引擎放弃使用索引而进行全表扫描。如：select id from t where num/2=100应改为:select id from t where num=100*2 
-　　9.应尽量避免在where子句中对字段进行函数操作，这将导致引擎放弃使用索引而进行全表扫描。如：select id from t where substring(name,1,3)=’abc’ ，name以abc开头的id应改为:select id from t where name like ‘abc%’ 
-　　10.不要在 where 子句中的“=”左边进行函数、算术运算或其他表达式运算，否则系统将可能无法正确使用索引。 
+　1. 对查询进行优化，应尽量避免全表扫描，首先应考虑在 where 及 order by 涉及的列上建立索引。 
+　2. 应尽量避免在 where 子句中对字段进行 null 值判断，否则将导致引擎放弃使用索引而进行全表扫描，如：select id from t where num is null可以在num上设置默认值0，确保表中num列没有null值，然后这样查询：select id from t where num=0 
+　3. 应尽量避免在 where 子句中使用!=或<>操作符，否则引擎将放弃使用索引而进行全表扫描。 
+　4. 应尽量避免在 where 子句中使用or 来连接条件，否则将导致引擎放弃使用索引而进行全表扫描，如：select id from t where num=10 or num=20可以这样查询：select id from t where num=10 union all select id from t where num=20 
+　5. in 和 not in 也要慎用，否则会导致全表扫描，如：select id from t where num in(1,2,3) 对于连续的数值，能用 between 就不要用 in 了：select id from t where num between 1 and 3 
+　6. 避免使用通配符。下面的查询也将导致全表扫描：select id from t where name like ‘李%’若要提高效率，可以考虑全文检索。 
+　7. 如果在 where 子句中使用参数，也会导致全表扫描。因为SQL只有在运行时才会解析局部变量，但优化程序不能将访问计划的选择推迟到运行时；它必须在编译时进行选择。然而，如果在编译时建立访问计划，变量的值还是未知的，因而无法作为索引选择的输入项。如下面语句将进行全表扫描：select id from t where num=@num可以改为强制查询使用索引：select id from t with(index(索引名)) where num=@num 
+　8. 应尽量避免在 where 子句中对字段进行表达式操作，这将导致引擎放弃使用索引而进行全表扫描。如：select id from t where num/2=100应改为:select id from t where num=100*2 
+　9. 应尽量避免在where子句中对字段进行函数操作，这将导致引擎放弃使用索引而进行全表扫描。如：select id from t where substring(name,1,3)=’abc’ ，name以abc开头的id应改为:select id from t where name like ‘abc%’ 
+　10. 不要在 where 子句中的“=”左边进行函数、算术运算或其他表达式运算，否则系统将可能无法正确使用索引。 
 　　11.在使用索引字段作为条件时，如果该索引是复合索引，那么必须使用到该索引中的第一个字段作为条件时才能保证系统使用该索引，否则该索引将不会被使用，并且应尽可能的让字段顺序与索引顺序相一致。 
 　　12.不要写一些没有意义的查询，如需要生成一个空表结构：select col1,col2 into #t from t where 1=0 这类代码不会返回任何结果集，但是会消耗系统资源的，应改成这样：create table #t(…) 
 　　13.很多时候用 exists 代替 in 是一个好的选择：select num from a where num in(select num from b)用下面的语句替换：select num from a where exists(select 1 from b where num=a.num) 
@@ -450,19 +492,19 @@ mysql 的 explain 命令，字段key如果为null ，表示没有使用索引
 
 ​	30.尽量避免向客户端返回大数据量，若数据量过大，应该考虑相应需求是否合理。
 
-------
+#### Mysql性能优化
+
+1. 增大 join_buffer_size 的数值，也就是表和表联接的缓冲区的大小，在做join操作的时候会把驱动表的相应数据加载进入  joinbuffer 中， 在使用join的时候，基于被驱动表是否有索引有两种情况，分别是 Index Nested-Loop Join  和 Block Nested-Loop Join，后者表示没有索引，如果在后者的情况，如果join-buffer 不够大，一次只能加载部分的驱动表，但是相应的被驱动表就要全表扫描一次，所以增加此buffer 能降低被驱动表的全表扫描次数从而提升性能
 
 **SQL索引的顺序，字段的顺序**
 
 基于索引的最左匹配特性？
 
-------
+
 
 **sql having的使用场景**
 
-------
-
-**什么是 MVCC ？**
+####什么是 MVCC ？
 
 多版本并发控制（MVCC **Multi-Version Concurrency Control**），是一种用来**解决读-写冲突**的无锁并发控制，也就是为事务分配单向增长的时间戳，为每个修改保存一个版本，版本与事务时间戳关联，读操作只读该事务开始前的数据库的快照。 这样在读操作不用阻塞写操作，写操作不用阻塞读操作的同时，避免了脏读和不可重复读。
 
@@ -478,7 +520,7 @@ mysql 的 explain 命令，字段key如果为null ，表示没有使用索引
 
 ------
 
-## 算法
+## 算法与数据结构
 
 **说下你知道的排序算法**
 
@@ -488,51 +530,61 @@ mysql 的 explain 命令，字段key如果为null ，表示没有使用索引
 
 ## JVM
 
-**JVM垃圾回收机制，何时触发MinorGC等操作**
-
-对象优先在新生代 Eden 区中分配，如果 Eden 区没有足够的空间时，就会触发一次 Young GC 。
-
-------
-
-**什么情况下回出现 Full GC？**
-
-- 1、在执行 Young GC 之前，JVM 会进行空间分配担保——如果老年代的连续空间小于新生代对象的总大小（或历次晋升的平均大小），则触发一次 Full GC 。
-- 2、大对象直接进入老年代，从年轻代晋升上来的老对象，尝试在老年代分配内存时，但是老年代内存空间不够。
-- 3、显式调用 `System#gc()` 方法时。
-
-------
-
-**直接内存（堆外内存）与堆内存比较？**
-
-1. 直接内存申请空间耗费更高的性能，当频繁申请到一定量时尤为明显。
-2. 直接内存 IO 读写的性能要优于普通的堆内存，在多次读写操作的情况下差异明显。
-
-------
-
-**JVM 垃圾回收算法？**
+###JVM 垃圾回收算法？
 
 1. 标记-清除算法
 2. 标记-整理算法
 3. 复制算法
 4. 分代收集算法
 
+###JVM垃圾回收机制，何时触发MinorGC等操作
+
+对象优先在新生代 Eden 区中分配，如果 Eden 区没有足够的空间时，就会触发一次 Young GC 。
+
+
+
+###什么情况下回出现 Full GC？
+
+- 1、在执行 Young GC 之前，JVM 会进行空间分配担保——如果老年代的连续空间小于新生代对象的总大小（或历次晋升的平均大小），则触发一次 Full GC 。
+- 2、大对象直接进入老年代，从年轻代晋升上来的老对象，尝试在老年代分配内存时，但是老年代内存空间不够。
+- 3、显式调用 `System#gc()` 方法时。
+
+
+
+####直接内存（堆外内存）与堆内存比较？
+
+1. 直接内存申请空间耗费更高的性能，当频繁申请到一定量时尤为明显。
+2. 直接内存 IO 读写的性能要优于普通的堆内存，在多次读写操作的情况下差异明显。
+
 ------
 
-**内存泄漏的可能原因**
+1. ​
+
+------
+
+###内存泄漏的可能原因
 
 1. 静态集合类引起内存泄漏，如HashMap，ArrayList等
 2. 各种连接，比如数据库连接（dataSourse.getConnection()），网络连接(socket)和io连接，除非其显式的调用了其close（）方法将其连接关闭，否则是不会自动被GC 回收的。
 3. 单例模式，不正确使用单例模式是引起内存泄漏的一个常见问题，单例对象在初始化后将在JVM的整个生命周期中存在（以静态变量的方式），如果单例对象持有外部的引用。
 
-------
+
+
+#### 当出现了内存溢出，你怎么排错
 
 
 
+##Linux
 
+## 分布式
 
-## 微服务
+### 理论
 
+#### 一致性hash算法原理与应用
 
+####  CAP原则
+
+#### 分布式raft算法
 
 ### 做服务发现常用的框架
 
@@ -547,13 +599,6 @@ mysql 的 explain 命令，字段key如果为null ，表示没有使用索引
 
 
 
-##其他
-
-**开发的ide是啥？能说下常用的快捷键吗**
-
-
-
-------
 
 
 
