@@ -150,6 +150,91 @@
 
 ####Spring bean的生命周期
 
+主要的创建流程都在方法`AbstractAutowireCapableBeanFactory#doCreateBean` 中，下面来一步一步的看
+
+##### 1.实例化 Bean 对象(instantiateBean)
+
+在`Spring` 中 `instantiate` 表示实例化的意思
+
+1. ```
+   BeanWrapper instanceWrapper = createBeanInstance(beanName, mbd, args);
+   ```
+
+2. 进入`createBeanInstance` 方法中，此方法会调用`instantiateBean(beanName, mbd);` 方法
+
+##### 2.属性注入(populateBean)
+
+调用`populateBean(beanName, mbd, instanceWrapper);` 方法进行属性输入
+
+##### 3.初始化数据(initializeBean)
+
+初始化数据主要使用了如下的方法：
+
+```java
+protected Object initializeBean(final String beanName, final Object bean, @Nullable RootBeanDefinition mbd) {
+    invokeAwareMethods(beanName, bean);
+    wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
+    invokeInitMethods(beanName, wrappedBean, mbd);
+	wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
+	return wrappedBean;
+}
+```
+
+具体的解释看下面：
+
+
+
+###### invokeAwareMethods
+
+Aware 接口的注入，对应NameAware，BeanClassLoaderAware，BeanFactoryAware
+
+###### applyBeanPostProcessorsBeforeInitialization
+
+循环调用`BeanPostProcessor `  的  `postProcessBeforeInitialization` 方法
+
+###### invokeInitMethods
+
+此方法用来执行初始化方法，那么初始化方法有哪些呢，参看 Spring 下面的面试题 `指定Bean的初始化和销毁方法`
+
+我们直接来看看代码实现：
+
+```java
+protected void invokeInitMethods(String beanName, final Object bean, @Nullable RootBeanDefinition mbd)
+		throws Throwable {
+	//省略部分代码
+    //如果实现了InitializingBean 接口，调用其afterPropertiesSet 方法
+	boolean isInitializingBean = (bean instanceof InitializingBean);
+	((InitializingBean) bean).afterPropertiesSet();
+
+
+	if (mbd != null && bean.getClass() != NullBean.class) {
+		String initMethodName = mbd.getInitMethodName();
+		if (StringUtils.hasLength(initMethodName) &&
+				!(isInitializingBean && "afterPropertiesSet".equals(initMethodName)) &&
+				!mbd.isExternallyManagedInitMethod(initMethodName)) {
+            //调用自定义的 Init 方法，就是我们使用xml配置，或者@Bean注解设置的 init-method 属性指定的方法
+			invokeCustomInitMethod(beanName, bean, mbd);
+		}
+	}
+}
+```
+
+JSR250 规范中使用`@PostConstruct` 在代码中哪里实现的留待以后查看//TODO
+
+###### applyBeanPostProcessorsAfterInitialization
+
+循环调用`BeanPostProcessor `  的  `postProcessAfterInitialization` 方法
+
+##### 4.Bean 的销毁
+
+如果 Bean 实现 **DisposableBean** 接口，当 spring 容器关闭时，会调用 `#destroy()` 方法。
+
+如果为 bean 指定了 **destroy** 方法（例如 `<bean />` 的 `destroy-method` 属性），那么将调用该方法。
+
+
+
+#### 讲讲Spring加载流程
+
 实例化 `BeanFactoryPostProcessor` 实现类 ,
 
 然后调用其 `postProcessBeanFactory` 方法
@@ -157,8 +242,6 @@
 实例化`BeanPostProcessor` 实现类
 
 实例化  InstantiationAwareBeanPostProcessor 实现类，它也是 `extends BeanPostProcessor`
-
-#### 讲讲Spring加载流程
 
 #### Spring AOP的实现原理
 
@@ -187,6 +270,18 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
 3. 使用`@Import`注解
 
    相信很多人对`@EnableScheduling` 、`@EnableCaching`等@Enablexxxx系列的注解都不陌生，它们就是使用的是@Import注解来实现开启xx功能的。
+
+#### 指定Bean的初始化和销毁方法
+
+**1. **通过@Bean指定init-method和destroy-method；
+
+**2. **通过让Bean实现InitializingBean（定义初始化逻辑），DisposableBean（定义销毁逻辑）;
+
+**3.** 可以使用JSR250；
+
+@PostConstruct：在bean创建完成并且属性赋值完成；来执行初始化方法
+
+@PreDestroy：在容器销毁bean之前通知我们进行清理工作
 
 
 ### SpringMVC
@@ -594,7 +689,7 @@ SQL语句的优化（收效甚微）
 
 ------
 
-1. ​
+1. 
 
 ------
 
