@@ -322,6 +322,19 @@ Controller默认是单例,
 
 
 
+#### 自动配置 V.S 自动装配
+
+- 自动配置：是 Spring Boot 提供的，实现通过 jar 包的依赖，能够自动配置应用程序。例如说：我们引入 `spring-boot-starter-web` 之后，就自动引入了 Spring MVC 相关的 jar 包，从而自动配置 Spring MVC 。
+- 自动装配：是 Spring 提供的 IoC 注入方式，比如使用使用`byName`或者`byType`自动装配bean对象
+
+
+
+
+
+
+
+
+
 ### Dubbo
 
 #### Dubbo 有哪些负载均衡策略？
@@ -388,6 +401,10 @@ Reactor 有 3 种模型实现：
 1. 单 Reactor 单线程模型
 2. 单 Reactor 多线程模型
 3. 多 Reactor 多线程模型
+
+
+
+#### poll、epoll、select 的区别
 
 
 
@@ -638,6 +655,47 @@ main function is finished.
 队友0, 通过了第2个障碍物, 使用了 2.784s
 ```
 
+### 实操题
+
+#### 两个线程交替执行，一个输出奇数，一个输出偶数
+
+我们使用 volatile 变量代替 CAS 变量，减轻使用 CAS 的消耗，注意，这里 ++num 不是原子的，但不妨碍，因为有 flag 变量控制。而 num 必须是 volatile 的，如果不是，会导致可见性问题。
+
+```java
+public class ThreadPrintDemo3 {
+    
+    static volatile int num = 0;
+    static volatile boolean flag = false;
+
+    public static void main(String[] args) {
+
+        Thread t1 = new Thread(() -> {
+            for (; 100 > num; ) {
+                if (!flag && (num == 0 || ++num % 2 == 0)) {
+                    System.out.println(Thread.currentThread() + " ：" + num);
+                    flag = true;
+                }
+            }
+        }
+        );
+
+        Thread t2 = new Thread(() -> {
+            for (; 100 > num; ) {
+                if (flag && (++num % 2 != 0)) {
+                    System.out.println(Thread.currentThread() + " ：" + num);
+                    flag = false;
+                }
+            }
+        }
+        );
+        t1.start();
+        t2.start();
+    }
+}
+```
+
+
+
 ##数据库
 
 
@@ -840,7 +898,7 @@ TreeMap、TreeSet以及JDK1.8之后的HashMap底层都用到了红黑树，以�
 
 ------
 
-1. ​
+1. 
 
 ------
 
