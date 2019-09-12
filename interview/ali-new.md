@@ -298,17 +298,95 @@ Controller默认是单例,
 
 ### SpringBoot
 
-####SpringBoot starter 原理
+####SpringBoot starter 原理（自动配置原理）
 
 首先说说原理，我们知道使用一个公用的starter的时候，只需要将相应的依赖添加的Maven的配置文件当中即可，免去了自己需要引用很多依赖类，并且SpringBoot会自动进行类的自动配置。那么 SpringBoot 是如何知道要实例化哪些类，并进行自动配置的呢？ 下面简单说一下。
 
-首先，SpringBoot 在启动时会去依赖的starter包中寻找 `resources/META-INF/spring.factories `文件，然后根据文件中配置的Jar包去扫描项目所依赖的Jar包，这类似于 Java 的 **SPI** 机制。
+1. 首先，SpringBoot 在启动时会去依赖的starter包中寻找 `resources/META-INF/spring.factories `文件，然后根据文件中配置的Jar包去扫描项目所依赖的Jar包，这类似于 Java 的 **SPI** 机制。
+2. 第二步，根据 `spring.factories`配置加载`AutoConfigure`类。
+3. 最后，根据 `@Conditional`注解的条件，进行自动配置并将Bean注入Spring Context 上下文当中。我们也可以使用`@ImportAutoConfiguration({MyServiceAutoConfiguration.class})` 指定自动配置哪些类。
 
-第二步，根据 `spring.factories`配置加载`AutoConfigure`类。
+下面具体代码：
 
-最后，根据 `@Conditional`注解的条件，进行自动配置并将Bean注入Spring Context 上下文当中。
+```java
+@EnableAutoConfiguration
+public @interface SpringBootApplication {
+}
 
-我们也可以使用`@ImportAutoConfiguration({MyServiceAutoConfiguration.class})` 指定自动配置哪些类。
+@Import(AutoConfigurationImportSelector.class)
+public @interface EnableAutoConfiguration {
+}
+```
+
+因为使用`@Import` 注解引入`AutoConfigurationImportSelector` 类，进入这个类的`selectImports`
+
+```java
+@Override
+public String[] selectImports(AnnotationMetadata annotationMetadata) {
+    if (!isEnabled(annotationMetadata)) {
+        return NO_IMPORTS;
+    }
+    AutoConfigurationMetadata autoConfigurationMetadata = AutoConfigurationMetadataLoader
+        .loadMetadata(this.beanClassLoader);
+    //看这里
+    AutoConfigurationEntry autoConfigurationEntry = getAutoConfigurationEntry(
+        autoConfigurationMetadata, annotationMetadata);
+    return StringUtils.toStringArray(autoConfigurationEntry.getConfigurations());
+}
+```
+
+进入`AutoConfigurationImportSelector.getAutoConfigurationEntry`方法：
+
+```java
+protected AutoConfigurationEntry getAutoConfigurationEntry(
+    AutoConfigurationMetadata autoConfigurationMetadata,
+    AnnotationMetadata annotationMetadata) {
+    AnnotationAttributes attributes = getAttributes(annotationMetadata);
+    //省略了其他的代码，主要是这里
+    List<String> configurations = getCandidateConfigurations(annotationMetadata,
+                                                             attributes);
+}
+```
+
+进入`AutoConfigurationImportSelector#getCandidateConfigurations`方法，**该方法会去获取所有自动配置类的名称**。
+
+1. 该方法会扫描jar包路径下的`META-INF/spring.factories` 文件，把扫描到的这些文件内容包装成properties对象。
+2. 再从properties中获取到EnableAutoConfiguration.class类（类名）为key 对应的值，并且把他们添加到容器中。
+3. 打开一个`spring.factories`文件，看到的非常多的xxxxAutoConfiguration类，这些类都是容器中的一个组件，加入到容器中，用他们做自动配置。
+
+我们看一个自动装配的例子`RedisAutoConfiguration`,这是自定义的一个自动装配的类，其中就是借助`Conditional`相关的注解根据不同的条件，向容器中注入bean
+
+```java
+@Configuration
+@ConditionalOnProperty(value = "spring.redis.enabled",matchIfMissing = true)
+@ConditionalOnClass({ RedisTemplate.class })
+@EnableCaching
+@Slf4j
+public class RedisAutoConfiguration extends CachingConfigurerSupport {
+
+	@Bean
+	@ConditionalOnMissingBean(RedisTemplate.class)
+	public RedisTemplate<String, Object> redisTemplate(@Autowired RedisConnectionFactory redisConnectionFactory,
+			@Autowired RedisSerializer<Object> redisSerializer)
+			throws UnknownHostException {
+		RedisTemplate<String, Object> template = new RedisTemplate<String, Object>();
+		template.setConnectionFactory(redisConnectionFactory);
+		template.setHashValueSerializer(redisSerializer);
+		template.setValueSerializer(redisSerializer);
+		StringRedisSerializer stringRedisSerializer = new StringRedisSerializer(Charset.forName("UTF-8"));
+		template.setHashKeySerializer(stringRedisSerializer);
+		template.setKeySerializer(stringRedisSerializer);
+		log.info("redisTemplate init success");
+		return template;
+	}
+
+	 @Bean
+	 @ConditionalOnMissingBean(value = RedisSerializer.class)
+     public RedisSerializer<Object> redisSerializer() {
+         return new GenericFastJsonRedisSerializer();
+     }
+}
+```
 
 
 
@@ -326,12 +404,6 @@ Controller默认是单例,
 
 - 自动配置：是 Spring Boot 提供的，实现通过 jar 包的依赖，能够自动配置应用程序。例如说：我们引入 `spring-boot-starter-web` 之后，就自动引入了 Spring MVC 相关的 jar 包，从而自动配置 Spring MVC 。
 - 自动装配：是 Spring 提供的 IoC 注入方式，比如使用使用`byName`或者`byType`自动装配bean对象
-
-
-
-
-
-
 
 
 
@@ -406,7 +478,18 @@ Reactor 有 3 种模型实现：
 
 #### poll、epoll、select 的区别
 
+#### 什么是零拷贝
 
+维基上是这么描述零拷贝的：零拷贝描述的是CPU不执行拷贝数据从一个存储区域到另一个存储区域的任务，这通常用于通过网络传输一个文件时以减少CPU周期和内存带宽。
+ 
+
+##### 零拷贝给我们带来的好处：
+
+- 减少甚至完全避免不必要的CPU拷贝，从而让CPU解脱出来去执行其他的任务
+- 减少内存带宽的占用
+- 通常零拷贝技术还能够减少用户空间和操作系统内核空间之间的上下文切换
+
+https://www.jianshu.com/p/e76e3580e356
 
 ## network
 
@@ -449,6 +532,61 @@ LinkedList 基于链表的数据结构，地址是任意的，所以在开辟内
 LinkedList 明显更大，因为每个节点有很多的额外数据，比如向前和向后的索引
 
 ###Map
+
+#### HashMap
+
+##### put确定元素插入位置
+
+采用如下的二进制计算方式
+
+`(n - 1) & hash` ,n 就是数组的长度，
+
+如果数组长度是16，换算成二进制，就是00000001111
+
+前面全是0，所以使用 & 能得到桶位
+
+##### resize（扩容）
+
+jkd 8 `HashMap` 扩容，关键点是如下的代码：
+
+```java
+do {
+	next = e.next;
+	if ((e.hash & oldCap) == 0) { //关键点1，确定是否还在原来的位置上
+		if (loTail == null)
+			loHead = e;
+		else
+			loTail.next = e;
+		loTail = e;
+	}
+	else {
+		if (hiTail == null)
+			hiHead = e;
+		else
+			hiTail.next = e;
+		hiTail = e;
+	}
+} while ((e = next) != null);
+if (loTail != null) {
+	loTail.next = null;
+	newTab[j] = loHead;
+}
+if (hiTail != null) {
+	hiTail.next = null;
+	newTab[j + oldCap] = hiHead;//关键点2：如果是高位，就要加上以前的容量
+}
+```
+
+我们来看看关键点1的原理：
+
+要想明白关键点1 的原理，我们需要结合上面的问题`put确定元素插入位置`
+
+因为我们扩容了，那么从16扩展到32，我们求数据的位置，就是 1 1111 & hash
+
+- 但是因为，hash是固定不变的，那么 hash & 1111（四位）是不变的，
+- 那么`(e.hash & oldCap) == 0`就是表示，hash & 1 0000 （就是 32-1 相对于 16-1 多出来的第五位）为0，那么就是 hash & 1 1111 = hash & 1111 ，**所以就还是原来的位置**
+
+
 
 ####HashMap和Hashtable区别
 
@@ -835,6 +973,25 @@ SQL语句的优化（收效甚微）
   > Redis 利用队列技术，将并发访问变为串行访问，消除了传统数据库串行控制的开销
 
 - 4、Redis 全程使用 hash 结构，读取速度快，还有一些特殊的数据结构，对数据存储进行了优化，如压缩表，对短数据进行压缩存储，再如，跳表，使用有序的数据结构加快读取的速度。
+
+## 中间件
+
+### RocketMQ
+
+#### 消息队列有几种投递方式？分别有什么优缺点
+
+消息队列有 **push 推送**和 **pull 拉取**两种投递方式
+
+- push 
+  - 优点，就是及时性。
+  - 缺点，就是受限于消费者的消费能力，可能造成消息的堆积，Broker 会不断给消费者发送不能处理的消息。
+- pull
+  - 优点，就是主动权掌握在消费方，可以根据自己的消息速度进行消息拉取。
+  - 缺点，就是消费方不知道什么时候可以获取的最新的消息，会有消息延迟和忙等。
+
+目前的消息队列，**基于 push + pull 模式结合的方式**，Broker 仅仅告诉 Consumer 有新的消息，具体的消息拉取，还是 Consumer 自己主动拉取。
+
+
 
 ## 算法与数据结构
 
