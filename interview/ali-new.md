@@ -449,6 +449,14 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 - **一致性 Hash**，相同参数的请求总是发到同一提供者。
 - 当某一台提供者挂时，原本发往该提供者的请求，基于虚拟节点，平摊到其它提供者，不会引起剧烈变动。
 
+
+
+#### Dubbo SPI
+
+##### 源码分析
+
+1. 
+
 ### Mybatis
 
 ### Netty
@@ -822,6 +830,13 @@ main function is finished.
 队友2, 通过了第2个障碍物, 使用了 2.603s
 队友0, 通过了第2个障碍物, 使用了 2.784s
 ```
+
+#### ArrayBlockingQueue
+
+关键点：
+
+1. 使用`final Object[] items;`来存放数据，使用`int takeIndex;`, 和 `int putIndex;`来分别记录存和取的记录，使用`int count;`来记录队列中数据的数量
+2. 
 
 ### 实操题
 
