@@ -455,7 +455,9 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 ##### 源码分析
 
-1. ​
+1. 
+
+#### Dubbo监控平台能够动态改变接口的一些设置,其原理是怎样的?
 
 ### Mybatis
 
@@ -852,7 +854,7 @@ main function is finished.
 关键点：
 
 1. 使用`final Object[] items;`来存放数据，使用`int takeIndex;`, 和 `int putIndex;`来分别记录存和取的记录，使用`int count;`来记录队列中数据的数量
-2. ​
+2. 
 
 ### 实操题
 
@@ -1252,7 +1254,7 @@ SafePoint 指的特定位置主要有：
 > - 线程执行到安全区域的代码时，首先标识自己进入了安全区域，这样 GC 时就不用管进入安全区域的线程了.
 > - 线程要离开安全区域时就检查 JVM 是否完成了 GC Roots 枚举（或者整个 GC 过程），如果完成就继续执行，如果没有完成就等待直到收到可以安全离开的信号。
 
-## 对象分配规则是什么？
+### 对象分配规则是什么？
 
 - 对象优先分配在 Eden 区。
 
@@ -1284,6 +1286,20 @@ SafePoint 指的特定位置主要有：
 - 空间分配担保。
 
   > 每次进行 Minor GC 时，JVM 会计算 Survivor 区移至老年区的对象的平均大小，如果这个值大于老年区的剩余值大小则进行一次 Full GC ，如果小于检查 HandlePromotionFailure 设置，如果 `true` 则只进行 Monitor GC ，如果 `false` 则进行 Full GC 。
+
+
+
+### 类加载
+
+#### Class.forName和ClassLoader加载类的区别
+
+1. Class.forName可以指定是否初始化`public static Class<?> forName(String name, boolean initialize,ClassLoader loader)`,如果参数`initialize`为true，则加载的类将会被初始化也就是初始化一些静态块和静态方法的执行
+
+2. 使用场景：在我们熟悉的Spring框架中的IOC的实现就是使用的ClassLoader。
+
+   而在我们使用JDBC时通常是使用Class.forName()方法来加载数据库连接驱动。
+
+   这是因为在JDBC规范中明确要求Driver(数据库驱动)类必须向DriverManager注册自己。`com.mysql.jdbc.Driver`类有有一块静态代码`DriverManager.registerDriver(new Driver());`
 
 
 
