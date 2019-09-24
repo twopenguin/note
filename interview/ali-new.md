@@ -459,6 +459,10 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 #### Dubbo监控平台能够动态改变接口的一些设置,其原理是怎样的?
 
+#### 最小活跃数算法中是如何统计这个活跃数的？
+
+针对每个服务接口的每一个方法，定义了一个`RpcStatus` 对象来保存状态，其中有个字段叫`active` atomicInteger 类型的字段用来表示活跃数，在`ActiveLimitFilter`中每当这个方法被调用开始，active 加1，调用返回，active 减1，所以此值越小，代表当前正在处理得调用就越少，所以请求就发给此Invoker
+
 ### Mybatis
 
 ### Netty
