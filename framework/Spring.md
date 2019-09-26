@@ -1774,6 +1774,24 @@ if (arguments != null) {
 
 
 
+# Spring类说明
+
+## AbstractBeanDefinition
+
+```java
+/**
+	 * Return whether this bean definition is 'synthetic', that is,
+	 * not defined by the application itself.
+	 */
+public boolean isSynthetic() {
+    return this.synthetic;
+}
+```
+
+
+
+## BeanDefinitionHolder
+
 `BeanDefinitionHolder` 是 `BeanDefinition` 的包装器，代码如下：
 
 ```java
@@ -1789,9 +1807,24 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 
 
 
+## BeanFactoryPostProcessor
 
+###  是什么
 
+`BeanFactoryPostProcessor` 是一个接口，在里面只有一个方法定义：
 
+```
+@FunctionalInterface
+public interface BeanFactoryPostProcessor {
+	void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
+}
+```
+
+**定义：是 Spring 对外提供可扩展的接口，能够在容器加载了所有 bean 信息（AbstractApplicationContext#obtainFreshBeanFactory 方法）之后，bean 实例化之前执行，用来修改 bean 的定义属性。**
+
+**可以看到，方法参数是 ConfigurableListableBeanFactory beanFactory ，说明我们可以通过引用该接口，在方法中实现逻辑，对容器中 bean 的定义（配置元数据）进行处理**
+
+同时，执行后处理器是有先后顺序的概念，我们可以通过设置 `order` 属性来控制它们的执行次序，前提是 `BeanFactoryPostProcessor` 实现了 `Order` 接口。
 
 
 

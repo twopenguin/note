@@ -245,13 +245,35 @@ JSR250 规范中使用`@PostConstruct` 在代码中哪里实现的留待以后�
 
 #### Spring AOP的实现原理
 
-#### 讲讲Spring事务的传播属性
+#### Spring事务
 
-#### Spring如何管理事务的
+##### 讲讲Spring事务的传播属性
+
+##### Spring如何管理事务的
 
 ####Spring怎么解决循环依赖
 
 
+
+#### FactoryBean
+
+1. **为什么有FactoryBean：**在某些情况下，实例化 `bean` 比较复杂，例如有多个参数的情况下，传统方式需要在配置文件中，写很多配置信息，显得不太灵活。在这种情况下，可以使用 `Spring` 提供的 `FactoryBean` 接口，用户可以通过实现该接口定制实例化 `bean` 的逻辑。
+
+2. 当配置文件中的 `<bean>` 的 `class` 属性实现类是 `FactoryBean` 时，通过 `getBean()` 方法返回的不是 `FactoryBean` 本身，而是 `FactoryBean#getObject()` 方法返回的对象。
+
+3. 通过上下文获取类的方法 `context.getBean("beanName")`，使用区别是 `beanName` 是否使用 & 前缀，如果没有 & 前缀，识别到的是 FactoryBean.getObject 返回的类型，如果带上 & 前缀，那么将会返回 `FactoryBean` 类型的类。以`YamlPropertiesFactoryBean` 为例, 如果不带&前缀，返回`Properties`类型，带&前缀返回`YamlPropertiesFactoryBean` 类型
+
+   ```java
+   public class YamlPropertiesFactoryBean extends YamlProcessor implements FactoryBean<Properties>, InitializingBean {
+       public Properties getObject() {
+   		return (this.properties != null ? this.properties : createProperties());
+   	}
+   }
+   ```
+
+4. 
+
+#### BeanFactory 和 FactoryBean的区别？
 
 ####XML中配置init，destroy方法怎么可以做到调用具体的方法？
 
@@ -283,6 +305,55 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
 
 @PreDestroy：在容器销毁bean之前通知我们进行清理工作
 
+#### 自定义标签
+
+##### 如何自定义标签
+
+1. 默认位置在 `resources` -> `META-INF`下面，新建两个文件 **spring.hanlders 和 spring.schemas**分别放对应的 `handler` 和 `XSD`
+
+   ```properties
+   #spring.handlers 文件
+   http\://www.springframework.org/schema/aop=org.springframework.aop.config.AopNamespaceHandler
+   
+   #spring.schemas 文件
+   http\://www.springframework.org/schema/aop/spring-aop-4.0.xsd = org/springframework/aop/config/spring-aop.xsd
+   ```
+
+   
+
+2. 定义`handler`，用来注册`parser`,扩展了 `NamespaceHandlerSupport` 的类，在初始化注册解析器
+
+   ```java
+   public class AopNamespaceHandler extends NamespaceHandlerSupport {
+   	@Override
+   	public void init() {
+   		// In 2.0 XSD as well as in 2.1 XSD.
+   		registerBeanDefinitionParser("config", new ConfigBeanDefinitionParser());
+   		registerBeanDefinitionParser("aspectj-autoproxy", new AspectJAutoProxyBeanDefinitionParser());
+   		registerBeanDefinitionDecorator("scoped-proxy", new ScopedProxyBeanDefinitionDecorator());
+   
+   		// Only in 2.0 XSD: moved to context namespace as of 2.1
+   		registerBeanDefinitionParser("spring-configured", new SpringConfiguredBeanDefinitionParser());
+   	}
+   }
+   ```
+
+3. 定义**运行解析器  Parser**：扩展了 `AbstractSingleBeanDefinitionParser`，通过重载方法进行属性解析，完成解析。以aop的`AspectJAutoProxyBeanDefinitionParser` 解析器为例子
+
+   ```java
+   class AspectJAutoProxyBeanDefinitionParser implements BeanDefinitionParser {
+   
+   	@Override
+   	@Nullable
+   	public BeanDefinition parse(Element element, ParserContext parserContext) {
+   	AopNamespaceUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(parserContext, element);
+   		extendBeanDefinition(element, parserContext);
+   		return null;
+   	}
+   }
+   ```
+
+4. 
 
 ### SpringMVC
 
