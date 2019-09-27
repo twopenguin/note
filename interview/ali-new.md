@@ -1112,7 +1112,32 @@ SQL语句的优化（收效甚微）
 
 - 4、Redis 全程使用 hash 结构，读取速度快，还有一些特殊的数据结构，对数据存储进行了优化，如压缩表，对短数据进行压缩存储，再如，跳表，使用有序的数据结构加快读取的速度。
 
+#### Redis 有几种数据“过期”策略？
 
+Redis 的过期策略，就是指当 Redis 中缓存的 key 过期了，Redis 如何处理。
+
+Redis 提供了 3 种数据过期策略：
+
+- 被动删除：当读/写一个已经过期的 key 时，会触发惰性删除策略，直接删除掉这个过期 key 。
+- 主动删除：由于惰性删除策略无法保证冷数据被及时删掉，所以 Redis 会定期主动淘汰一批已过期的 key 。
+- 主动删除：当前已用内存超过 maxmemory 限定时，触发主动清理策略，即 [「Redis 有哪几种数据“淘汰”策略？」](http://svip.iocoder.cn/Redis/Interview/#) 。
+
+在 Redis 中，同时使用了上述 3 种策略，即它们**非互斥**的。
+
+
+
+#### Redis 有哪几种数据“淘汰”策略？
+
+Redis 内存数据集大小上升到一定大小的时候，就会进行数据淘汰策略。
+
+Redis 提供了 6 种数据淘汰策略：
+
+1. volatile-lru
+2. volatile-ttl
+3. volatile-random
+4. allkeys-lru
+5. allkeys-random
+6. no-enviction
 
 ## 中间件
 
