@@ -104,9 +104,37 @@
 
 ##### 写出三种单例模式实现 
 
-### 请列出5个运行时异常
+### 泛型
 
-### 泛型的存在是用来解决什么问题
+#### 泛型的存在是用来解决什么问题
+
+类型安全，主要是向下转型
+
+消除强制类型转换
+
+### 异常
+
+#### 请列出5个运行时异常
+
+### Socket
+
+#### Socket 工作在 TCP/IP 协议栈是哪一层
+
+socket的实现部分, 就是系统协议栈部分， 应该包含了 网络层 (ip), 传输层(tcp/udp)等等
+
+#### socket 选项 TCP NO DELAY 是指什么
+
+#### TCP、UDP 区别及 Java 实现方式
+
+#### 说几点 IO 的最佳实践
+
+#### 直接缓冲区与非直接缓冲器有什么区别？
+
+#### 怎么读写 ByteBuffer？ByteBuffer 中的字节序是什么
+
+#### 当用System.in.read(buffer)从键盘输入一行n个字符后，存储在缓冲区buffer中的字节数是多少
+
+#### 如何使用扫描器类（Scanner Class）令牌化
 
 
 
@@ -271,7 +299,7 @@ JSR250 规范中使用`@PostConstruct` 在代码中哪里实现的留待以后�
    }
    ```
 
-4. 
+4. ​
 
 #### BeanFactory 和 FactoryBean的区别？
 
@@ -314,12 +342,11 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
    ```properties
    #spring.handlers 文件
    http\://www.springframework.org/schema/aop=org.springframework.aop.config.AopNamespaceHandler
-   
+
    #spring.schemas 文件
    http\://www.springframework.org/schema/aop/spring-aop-4.0.xsd = org/springframework/aop/config/spring-aop.xsd
    ```
 
-   
 
 2. 定义`handler`，用来注册`parser`,扩展了 `NamespaceHandlerSupport` 的类，在初始化注册解析器
 
@@ -331,7 +358,7 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
    		registerBeanDefinitionParser("config", new ConfigBeanDefinitionParser());
    		registerBeanDefinitionParser("aspectj-autoproxy", new AspectJAutoProxyBeanDefinitionParser());
    		registerBeanDefinitionDecorator("scoped-proxy", new ScopedProxyBeanDefinitionDecorator());
-   
+
    		// Only in 2.0 XSD: moved to context namespace as of 2.1
    		registerBeanDefinitionParser("spring-configured", new SpringConfiguredBeanDefinitionParser());
    	}
@@ -342,7 +369,7 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
 
    ```java
    class AspectJAutoProxyBeanDefinitionParser implements BeanDefinitionParser {
-   
+
    	@Override
    	@Nullable
    	public BeanDefinition parse(Element element, ParserContext parserContext) {
@@ -353,7 +380,7 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
    }
    ```
 
-4. 
+4. ​
 
 ### SpringMVC
 
@@ -526,7 +553,7 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 ##### 源码分析
 
-1. 
+1. ​
 
 #### Dubbo监控平台能够动态改变接口的一些设置,其原理是怎样的?
 
@@ -855,11 +882,78 @@ wait（三个）、notify、notifyAll、hashcode、equles、toString、clone、g
 
 ###偏理论
 
-####happens before原理
+####Happens -Before原理
 
 
 
 ####volatile 实现原理
+
+#### Lock 与 Synchronized 的区别？
+
+Lock 是一个接口，Synchronized 是一个关键字
+
+#### Lock 接口比 synchronized 块的优势是什么？
+
+#### ReadWriteLock是什么？
+
+这是Java并发包下面的一个接口，`ReadWriteLock`, 就两个方法`readLock` 和 `writeLock` ，实现类`ReentrantReadWriteLock` ，应用在一些读写分离的场景
+
+
+
+ 锁机制有什么用
+
+什么是乐观锁（Optimistic Locking）？如何实现乐观锁？如何避免ABA问题
+
+解释以下名词：重排序，自旋锁，偏向锁，轻量级锁，可重入锁，公平锁，非公平锁，乐观锁，悲观锁
+
+什么时候应该使用可重入锁
+
+简述锁的等级方法锁、对象锁、类锁
+
+Java中活锁和死锁有什么区别？
+
+什么是死锁(Deadlock)？导致线程死锁的原因？如何确保 N 个线程可以访问 N 个资源同时又不导致死锁
+
+死锁与活锁的区别，死锁与饥饿的区别
+
+怎么检测一个线程是否拥有锁
+
+
+
+有哪些无锁数据结构，他们实现的原理是什么
+
+读写锁可以用于什么应用场景
+
+Executors类是什么？Executor和Executors的区别
+
+什么是Java线程转储(Thread Dump)，如何得到它
+
+如何在Java中获取线程堆栈
+
+#### 说出 3 条在 Java 中使用线程的最佳实践
+
+1. 在使用线程或者线程组是最好给线程定义名字
+2. ​
+
+#### 在线程中你怎么处理不可捕捉异常
+
+给线程设置`UncaughtExceptionHandler` 即不可捕捉异常处理器，这个`Handler` 是Thread的内部接口，可以通过`Thread` 的 `setUncaughtExceptionHandler` 方法设置
+
+实际项目中使用多线程举例。你在多线程环境中遇到的常见的问题是什么？你是怎么解决它的
+
+请说出与线程同步以及线程调度相关的方法
+
+程序中有3个 socket，需要多少个线程来处理
+
+假如有一个第三方接口，有很多个线程去调用获取数据，现在规定每秒钟最多有 10 个线程同时调用它，如何做到
+
+如何在 Windows 和 Linux 上查找哪个线程使用的 CPU 时间最长
+
+如何确保 main() 方法所在的线程是 Java 程序最后结束的线程
+
+非常多个线程（可能是不同机器），相互之间需要等待协调才能完成某种工作，问怎么设计这种协调方案
+
+你需要实现一个高效的缓存，它允许多个用户读，但只允许一个用户写，以此来保持它的完整性，你会怎样去实现它
 
 ###并发包
 
@@ -947,7 +1041,7 @@ main function is finished.
 关键点：
 
 1. 使用`final Object[] items;`来存放数据，使用`int takeIndex;`, 和 `int putIndex;`来分别记录存和取的记录，使用`int count;`来记录队列中数据的数量
-2. 
+2. ​
 
 ### 实操题
 
@@ -1523,6 +1617,20 @@ Leader（领导）
 - consul
 
 
+### 分布式链路追踪使用过哪些
+
+### 如何实现分布式锁
+
+目前主要有如下三种方式：
+
+基于数据库实现分布式锁； 
+基于缓存（Redis等）实现分布式锁； 
+基于Zookeeper实现分布式锁；
+
+### 你使用过哪些负载策略知道的有哪些负载策略
+
+
+
 
 ## 项目
 
@@ -1535,6 +1643,116 @@ Leader（领导）
 导致B方法的事务失效
 
 
+
+## 开放问题
+
+用一句话概括 Web 编程的特点
+
+Google是如何在一秒内把搜索结果返回给用户
+
+树（二叉或其他）形成许多普通数据结构的基础。请描述一些这样的数据结构以及何时可以使用它们
+
+某一项功能如何设计
+
+线上系统突然变得异常缓慢，你如何查找问题
+
+什么样的项目不适合用框架
+
+新浪微博是如何实现把微博推给订阅者
+
+简要介绍下从浏览器输入 URL 开始到获取到请求界面之后 Java Web 应用中发生了什么
+
+请你谈谈SSH整合
+
+高并发下，如何做到安全的修改同一行数据
+
+12306网站的订票系统如何实现，如何保证不会票不被超卖
+
+网站性能优化如何优化的
+
+聊了下曾经参与设计的服务器架构
+
+请思考一个方案，实现分布式环境下的 countDownLatch
+
+请思考一个方案，设计一个可以控制缓存总体大小的自动适应的本地缓存
+
+在你的职业生涯中，算得上最困难的技术挑战是什么
+
+如何写一篇设计文档，目录是什么
+
+大写的O是什么？举几个例子
+
+编程中自己都怎么考虑一些设计原则的，比如开闭原则，以及在工作中的应用
+
+解释一下网络应用的模式及其特点
+
+设计一个在线文档系统，文档可以被编辑，如何防止多人同时对同一份文档进行编辑更新
+
+说出数据连接池的工作机制是什么
+
+怎么获取一个文件中单词出现的最高频率
+
+描述一下你最常用的编程风格
+
+如果有机会重新设计你们的产品，你会怎么做
+
+如何搭建一个高可用系统
+
+如何启动时不需输入用户名与密码
+
+如何在基于Java的Web项目中实现文件上传和下载
+
+如何实现一个秒杀系统，保证只有几位用户能买到某件商品。
+
+如何实现负载均衡，有哪些算法可以实现
+
+如何设计一个购物车？想想淘宝的购物车如何实现的
+
+如何设计一套高并发支付方案，架构如何设计
+
+如何设计建立和保持 100w 的长连接
+
+如何避免浏览器缓存。
+
+如何防止缓存雪崩
+
+如果AB两个系统互相依赖，如何解除依
+
+如果有人恶意创建非法连接，怎么解决
+
+如果有几十亿的白名单，每天白天需要高并发查询，晚上需要更新一次，如何设计这个功能
+
+如果系统要使用超大整数（超过long长度范围），请你设计一个数据结构来存储这种超大型数字以及设计一种算法来实现超大整数加法运算）
+
+如果要设计一个图形系统，请你设计基本的图形元件(Point,Line,Rectangle,Triangle)的简单实现
+
+如果让你实现一个并发安全的链表，你会怎么做
+
+应用服务器与WEB 服务器的区别？应用服务器怎么监控性能，各种方式的区别？你使用过的应用服务器优化技术有哪些
+
+大型网站在架构上应当考虑哪些问题
+
+有没有处理过线上问题？出现内存泄露，CPU利用率标高，应用无响应时如何处理的
+
+最近看什么书，印象最深刻的是什么
+
+描述下常用的重构技巧
+
+你使用什么版本管理工具？分支（Branch）与标签（Tag）之间的区别在哪里
+
+你有了解过存在哪些反模式（Anti-Patterns）吗
+
+你用过的网站前端优化的技术有哪些
+
+如何分析Thread dump
+
+你如何理解AOP中的连接点（Joinpoint）、切点（Pointcut）、增强（Advice）、引介（Introduction）、织入（Weaving）、切面（Aspect）这些概念
+
+你是如何处理内存泄露或者栈溢出问题的
+
+你们线上应用的 JVM 参数有哪些
+
+怎么提升系统的QPS和吞吐量
 
 
 
