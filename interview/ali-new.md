@@ -299,7 +299,7 @@ JSR250 规范中使用`@PostConstruct` 在代码中哪里实现的留待以后�
    }
    ```
 
-4. ​
+4. 
 
 #### BeanFactory 和 FactoryBean的区别？
 
@@ -380,7 +380,7 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
    }
    ```
 
-4. ​
+4. 
 
 ### SpringMVC
 
@@ -553,7 +553,7 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 ##### 源码分析
 
-1. ​
+1. 
 
 #### Dubbo监控平台能够动态改变接口的一些设置,其原理是怎样的?
 
@@ -894,9 +894,7 @@ Lock 是一个接口，Synchronized 是一个关键字
 
 #### Lock 接口比 synchronized 块的优势是什么？
 
-#### ReadWriteLock是什么？
 
-这是Java并发包下面的一个接口，`ReadWriteLock`, 就两个方法`readLock` 和 `writeLock` ，实现类`ReentrantReadWriteLock` ，应用在一些读写分离的场景
 
 
 
@@ -933,7 +931,7 @@ Executors类是什么？Executor和Executors的区别
 #### 说出 3 条在 Java 中使用线程的最佳实践
 
 1. 在使用线程或者线程组是最好给线程定义名字
-2. ​
+2. 线程资源通过线程池提供 ，而不是自行显示创建
 
 #### 在线程中你怎么处理不可捕捉异常
 
@@ -957,7 +955,7 @@ Executors类是什么？Executor和Executors的区别
 
 ###并发包
 
-#### 原子类的原理是
+#### Atomic 类的原理是
 
 1. 包装的值使用volitale修饰
 2. 里面的一些操作使用`死循环`+unsafe的`cas`操作，比如自减操作
@@ -1041,7 +1039,12 @@ main function is finished.
 关键点：
 
 1. 使用`final Object[] items;`来存放数据，使用`int takeIndex;`, 和 `int putIndex;`来分别记录存和取的记录，使用`int count;`来记录队列中数据的数量
-2. ​
+
+
+
+#### ReadWriteLock是什么？
+
+这是Java并发包下面的一个接口，`ReadWriteLock`, 就两个方法`readLock` 和 `writeLock` ，实现类`ReentrantReadWriteLock` ，应用在一些读写分离的场景
 
 ### 实操题
 
@@ -1081,6 +1084,8 @@ public class ThreadPrintDemo3 {
     }
 }
 ```
+
+### 用过读写锁吗，原理是什么，一般在什么场景下用
 
 
 
@@ -1435,7 +1440,7 @@ TreeMap、TreeSet以及JDK1.8之后的HashMap底层都用到了红黑树，以�
 
 
 
-####直接内存（堆外内存）与堆内存比较？
+###直接内存（堆外内存）与堆内存比较？
 
 1. 直接内存申请空间耗费更高的性能，当频繁申请到一定量时尤为明显。
 2. 直接内存 IO 读写的性能要优于普通的堆内存，在多次读写操作的情况下差异明显。
@@ -1450,7 +1455,7 @@ TreeMap、TreeSet以及JDK1.8之后的HashMap底层都用到了红黑树，以�
 
 
 
-#### 当出现了内存溢出，你怎么排错
+### 当出现了内存溢出，你怎么排错
 
 ### 什么是安全点？
 
@@ -1465,7 +1470,7 @@ SafePoint 指的特定位置主要有：
 
 详细的内容，可以看看 [《深入学习 JVM-JVM 安全点和安全区域》](https://my.oschina.net/wenbo123/blog/1822414) 。
 
-#### 安全区域
+### 什么是安全区域？
 
 > 如果程序长时间不执行，比如线程调用的 sleep 方法，这时候程序无法响应 JVM 中断请求这时候线程无法到达安全点，显然 JVM 也不可能等待程序唤醒，这时候就需要安全区域了。
 >
@@ -1506,6 +1511,18 @@ SafePoint 指的特定位置主要有：
 - 空间分配担保。
 
   > 每次进行 Minor GC 时，JVM 会计算 Survivor 区移至老年区的对象的平均大小，如果这个值大于老年区的剩余值大小则进行一次 Full GC ，如果小于检查 HandlePromotionFailure 设置，如果 `true` 则只进行 Monitor GC ，如果 `false` 则进行 Full GC 。
+
+### 如何判断一个对象是否已经死去？
+
+1. **引用计数**，此方法简单，无法解决对象相互循环引用的问题。目前在用的有 Python、ActionScript3 等语言。
+2. 可达性分析
+
+### 可作为 GC Roots 的对象包括以下几种
+
+1. 虚拟机栈（栈帧中的本地变量表）中引用的对象。
+2. 方法区中的类静态属性引用的对象。
+3. 方法区中常量引用的对象。
+4. 本地方法栈中 JNI(即一般说的 Native 方法)中引用的对象。
 
 
 
@@ -1678,10 +1695,6 @@ Google是如何在一秒内把搜索结果返回给用户
 
 在你的职业生涯中，算得上最困难的技术挑战是什么
 
-如何写一篇设计文档，目录是什么
-
-大写的O是什么？举几个例子
-
 编程中自己都怎么考虑一些设计原则的，比如开闭原则，以及在工作中的应用
 
 解释一下网络应用的模式及其特点
@@ -1691,8 +1704,6 @@ Google是如何在一秒内把搜索结果返回给用户
 说出数据连接池的工作机制是什么
 
 怎么获取一个文件中单词出现的最高频率
-
-描述一下你最常用的编程风格
 
 如果有机会重新设计你们的产品，你会怎么做
 
@@ -1710,7 +1721,11 @@ Google是如何在一秒内把搜索结果返回给用户
 
 如何设计一套高并发支付方案，架构如何设计
 
-如何设计建立和保持 100w 的长连接
+### 如何设计建立和保持 100w 的长连接
+
+服务器内核调优(tcp，文件数)，客户端调优，框架选择(netty)
+
+
 
 如何避免浏览器缓存。
 
@@ -1718,13 +1733,13 @@ Google是如何在一秒内把搜索结果返回给用户
 
 如果AB两个系统互相依赖，如何解除依
 
-如果有人恶意创建非法连接，怎么解决
+### 如果有人恶意创建非法连接，怎么解决
+
+使用Filter，只是在不同的层面的，比如可以使用
 
 如果有几十亿的白名单，每天白天需要高并发查询，晚上需要更新一次，如何设计这个功能
 
 如果系统要使用超大整数（超过long长度范围），请你设计一个数据结构来存储这种超大型数字以及设计一种算法来实现超大整数加法运算）
-
-如果要设计一个图形系统，请你设计基本的图形元件(Point,Line,Rectangle,Triangle)的简单实现
 
 如果让你实现一个并发安全的链表，你会怎么做
 
@@ -1753,6 +1768,44 @@ Google是如何在一秒内把搜索结果返回给用户
 你们线上应用的 JVM 参数有哪些
 
 怎么提升系统的QPS和吞吐量
+
+## Web
+
+### Http
+
+#### 说说你知道的几种HTTP响应码
+
+200：ok 一切正常
+
+401：Unauthorized，登录权限的问题，要么错误，要么没有授权
+
+404：not found
+
+
+
+1xx：信息，请求收到，继续处理 
+2xx：成功，行为被成功地接受、理解和采纳 
+3xx：重定向，为了完成请求，必须进一步执行的动作 
+4xx：客户端错误，请求包含语法错误或者请求无法实现 
+5xx：服务器错误，服务器不能实现一种明显无效的请求
+
+#### 如何避免浏览器缓存
+
+无法被浏览器缓存的请求： 
+HTTP信息头中包含Cache-Control:no-cache，pragma:no-cache，或Cache-Control:max-age=0等告诉浏览器不用缓存的请求
+需要根据Cookie，认证信息等决定输入内容的动态请求是不能被缓存的 
+经过HTTPS安全加密的请求（有人也经过测试发现，ie其实在头部加入Cache-Control：max-age信息，firefox在头部加入Cache-Control:Public之后，能够对HTTPS的资源进行缓存，参考《HTTPS的七个误解》）
+POST请求无法被缓存 
+HTTP响应头中不包含Last-Modified/Etag，也不包含Cache-Control/Expires的请求无法被缓存 
+http://www.alloyteam.com/2012/03/web-cache-2-browser-cache/
+
+
+
+
+
+
+
+
 
 
 
