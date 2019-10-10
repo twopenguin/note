@@ -92,17 +92,92 @@
 
 #### 反射创建类实例的三种方式是什么
 
-
-
-#### 反射中，Class.forName和ClassLoader区别 
-
-
+1. 调用类的Class对象的newInstance方法，该方法会调用对象的默认构造器，如果没有默认构造器，会调用失败.
+2. 调用默认Constructor对象的newInstance方法
+3. 调用带参数Constructor对象的newInstance方法
 
 ### 设计模式
 
 #### 单例
 
 ##### 写出三种单例模式实现 
+
+**懒汉**，线程安全
+
+```java
+public class Singleton {
+    private static Singleton instance;
+    private Singleton (){}
+
+    public static synchronized Singleton getInstance() {
+	if (instance == null) {
+	    instance = new Singleton();
+	}
+	return instance;
+    }
+}
+```
+
+这种写法能够在多线程中很好的工作，而且看起来它也具备很好的lazy loading，但是，遗憾的是，效率很低，99%情况下不需要同步。
+
+饿汉
+
+```java
+public class Singleton {  
+    private static Singleton instance = new Singleton();  
+    private Singleton (){}  
+    public static Singleton getInstance() {  
+    return instance;  
+    }  
+}
+```
+
+静态内部类
+
+```java
+public class Singleton {  
+    private static class SingletonHolder {  
+    private static final Singleton INSTANCE = new Singleton();  
+    }  
+    private Singleton (){}  
+    public static final Singleton getInstance() {  
+    return SingletonHolder.INSTANCE;  
+    }  
+} 
+```
+
+枚举 
+
+```java
+public enum Singleton {
+    INSTANCE;
+    public void whateverMethod() {
+    }
+}
+```
+
+
+
+双重校验锁
+
+```java
+public class Singleton {
+    private volatile static Singleton singleton;
+    private Singleton (){}
+    public static Singleton getSingleton() {
+	if (singleton == null) {
+	    synchronized (Singleton.class) {
+		if (singleton == null) {
+		    singleton = new Singleton();
+		}
+	    }
+	}
+	return singleton;
+    }
+}
+```
+
+注意一定要加上`volatile` 关键字
 
 ### 泛型
 
@@ -143,7 +218,10 @@ socket的实现部分, 就是系统协议栈部分， 应该包含了 网络层 
 1. HashMap 使用 `hash & (n - 1)` 来取模
 
 2. ConcurrentHash 在 1.8 扩容(`transfer`)的时候，在计算新桶位的时候没有使用以前的老方式，而是采用一种取巧的方式 `(h & n) == 0` 则是在原来的位置上，否则，就是在相应位置的高位
-3. 
+
+
+
+
 
 ##Project
 
@@ -269,6 +347,8 @@ JSR250 规范中使用`@PostConstruct` 在代码中哪里实现的留待以后�
 
 
 #### 讲讲Spring加载流程
+
+核心在AbstractApplicationContext的refresh方法
 
 实例化 `BeanFactoryPostProcessor` 实现类 ,
 
@@ -828,6 +908,30 @@ http://www.cnblogs.com/ITtangtang/p/3966467.html
 
 
 **hashmap put 方法存放的时候怎么判断是否重复**
+
+
+
+### Set
+
+#### HashSet 的实现原理
+
+1. 对于 HashSet 而言，它是基于 HashMap 实现的，底层采用 HashMap 来保存元素
+2. 所有的value都是同一个对象`PRESENT` ，就是new 的一个Object
+
+直接看源码：
+
+```java
+//构造方法
+public HashSet(int initialCapacity) {
+    map = new HashMap<>(initialCapacity);
+}
+
+//add 方法
+private static final Object PRESENT = new Object();
+public boolean add(E e) {
+    return map.put(e, PRESENT)==null;
+}
+```
 
 
 
@@ -1564,6 +1668,10 @@ JVM规范定义了Java内存模型(Java Memory Model) 来屏蔽掉各种操作�
 
 JMM 就是一组规则，这组规则意在解决在并发编程可能出现的线程安全问题，并提供了内置解决方案（happen-before原则）及其外部可使用的同步手段(synchronized/volatile/final等)，确保了程序执行在多线程环境中的应有的原子性，可视性及其有序性。
 
+### 你们线上应用的 JVM 参数有哪些
+
+
+
 ### 类加载
 
 #### Class.forName和ClassLoader加载类的区别
@@ -1581,6 +1689,14 @@ JMM 就是一组规则，这组规则意在解决在并发编程可能出现的�
 
 
 ##Linux
+
+### 用一行命令查看文件的最后五行
+
+Tail -n 5 filename
+
+### 用一行命令输出正在运行的 java 进程。
+
+ps -ef|grep Java
 
 ## 分布式
 
