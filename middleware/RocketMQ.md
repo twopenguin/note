@@ -434,6 +434,36 @@ PutMessageResult putMessageResult = null;
 putMessageResult = this.brokerController.getMessageStore().putMessage(msgInner);
 ```
 
+# (6).message存储
+
+在上面一节中最后一步`putMessage` 最终是调用`CommitLog` 来进行消息的存储
+
+
+
+# (7).定时消息
+
+## Producer 发送定时消息
+
+发送时，设置消息的**延迟级别**
+
+```java
+Message msg = new Message(...);
+msg.setDelayTimeLevel(level);
+```
+
+这个数值对应`MessageStoreConfig` 的 `messageDelayLevel`字段
+
+```java
+private String messageDelayLevel = "1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h";
+```
+
+## Broker 存储定时消息
+
+- 🦅 存储消息时，延迟消息进入 `Topic` 为 `SCHEDULE_TOPIC_XXXX`。
+- 🦅 延迟级别 与 消息队列编号 做**固定映射：QueueId = DelayLevel - 1**。
+
+
+
 
 
 
