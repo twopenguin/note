@@ -999,9 +999,18 @@ wait（三个）、notify、notifyAll、hashcode、equles、toString、clone、g
 
 ####volatile 实现原理
 
-#### Lock 与 Synchronized 的区别？
 
-Lock 是一个接口，Synchronized 是一个关键字
+
+#### ReentrantLock与 Synchronized 的区别？
+
+- API方面:synchronized既可以修饰方法，也可以修饰代码块。ReentrantLock只能在方法体中使用。
+
+- 公平锁:synchronized的锁是非公平锁，ReentrantLock默认情况下也是非公平锁，但可以通过带布尔值的构造函数要求使用公平锁。
+
+- 等待可中断：假如业务代码中有两个线程，Thread1 Thread2。假设 Thread1 获取了对象object的锁，Thread2将等待Thread1释放object的锁。
+
+- - 使用synchronized。如果Thread1不释放，Thread2将一直等待，不能被中断。synchronized也可以说是Java提供的原子性内置锁机制。内部锁扮演了互斥锁（mutual exclusion lock ，mutex）的角色，一个线程引用锁的时候，别的线程阻塞等待。
+  - 使用ReentrantLock。如果Thread1不释放，Thread2等待了很长时间以后，可以中断等待，转而去做别的事情。至于判断重入锁，ReenTrantLock的字面意思就是再进入的锁，其实synchronized关键字所使用的锁也是可重入的，两者关于这个的区别不大。两者都是同一个线程没进入一次，锁的计数器都自增1，所以要等到锁的计数器下降为0时才能释放锁。
 
 #### Lock 接口比 synchronized 块的优势是什么？
 
@@ -1009,13 +1018,13 @@ Lock 是一个接口，Synchronized 是一个关键字
 
 
 
- 锁机制有什么用
+####  锁机制有什么用
 
-什么是乐观锁（Optimistic Locking）？如何实现乐观锁？如何避免ABA问题
+#### 什么是乐观锁（Optimistic Locking）？如何实现乐观锁？如何避免ABA问题
 
 解释以下名词：重排序，自旋锁，偏向锁，轻量级锁，可重入锁，公平锁，非公平锁，乐观锁，悲观锁
 
-什么时候应该使用可重入锁
+#### 什么时候应该使用可重入锁
 
 简述锁的等级方法锁、对象锁、类锁
 
@@ -1025,19 +1034,19 @@ Java中活锁和死锁有什么区别？
 
 死锁与活锁的区别，死锁与饥饿的区别
 
-怎么检测一个线程是否拥有锁
+#### 怎么检测一个线程是否拥有锁
 
 
 
-有哪些无锁数据结构，他们实现的原理是什么
+#### 有哪些无锁数据结构，他们实现的原理是什么
 
 读写锁可以用于什么应用场景
 
-Executors类是什么？Executor和Executors的区别
+#### Executors类是什么？Executor和Executors的区别
 
 什么是Java线程转储(Thread Dump)，如何得到它
 
-如何在Java中获取线程堆栈
+#### 如何在Java中获取线程堆栈
 
 #### 说出 3 条在 Java 中使用线程的最佳实践
 
@@ -1204,7 +1213,9 @@ public class ThreadPrintDemo3 {
 
 #### ThreadLocal 实现原理
 
+### ConcurrentHashMap
 
+面试者可以先说历史，1.8之前采用分段锁，核心就是一句话：尽量降低同步锁的粒度。1.8之后使用CAS思想代替冗杂的分段锁实现。不出意料，面试者答出CAS之后必定会被追问其思想以及应用，换做我自己的话会有如下思路作答：CAS采用乐观锁思想达到lock-free，提一下sun.misc.Unsafe中的native方法，至于CAS的其他应用可以聊一聊Atomic原子类和一些无锁并发框架（如Amino），提到ABA问题加分。
 
 ##数据库
 
