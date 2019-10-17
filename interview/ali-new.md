@@ -1415,7 +1415,24 @@ Producer 发送消息，有三种方式：
 
 #### 什么是消息重试？如何实现？
 
+#### RocketMQ 消息模式(MessageModel)
 
+```java
+public enum MessageModel {
+    /**
+     * broadcast
+     */
+    BROADCASTING("BROADCASTING"),
+    /**
+     * clustering
+     */
+    CLUSTERING("CLUSTERING");
+}
+```
+
+在 Clustering 模式下，同一个 ConsumerGroup ( GroupName 相同 ） 里的每个 Consumer 只消费所订阅消息 的一部分 内 容， 同一个 ConsumerGroup 里所有的 Consumer 消 费 的内 容合起来才是所订阅 Topic 内 容 的 整体 ，从而达到负载均衡的目的 。 
+
+在 Broadcasting 模式下，同一个 ConsumerGroup 里的每个 Consumer 都能消费到所订阅 Topic 的全部消息，也就是一个消息会被多次分发，被多个 Consumer 消费 。 
 
 ### Kafka
 

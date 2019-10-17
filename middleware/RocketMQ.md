@@ -369,6 +369,25 @@ public void operationComplete(ResponseFuture responseFuture) {
 
 
 
+## 自定义消息发送规则
+
+一个 Topic 会有多个 Message Queue ，如果使用 Producer 的 默认配置 ，这个 Producer 会轮流向各个 Message Queue 发送消息 。 Consumer 在消费消息的时候，会根据负载均衡策略，消费被分配到的 Message Queue ，如果不经过特定的设置，某条消息被发往 l哪个 Message Queue ，被哪个 Consumer 消费是未
+知的 。
+如果业务需要我们把消息发送到指定的 Message Queue 里，比如把同 一类型 的消息都发 往 相同的 Message Queue ， 该怎 么办呢？ 可以用 MessageQueueSelector  
+
+发送消息的时候，把 MessageQueueSelector 的对象作为参数，使用
+
+```java
+ public SendResult send ( Message msg, MessageQueueSelector selector, Object arg ）
+```
+
+
+
+函
+数发送消 息即可 。 在 MessageQueueSelector 的实现中，根据传人的 Object 参
+数，或者根据 Message 消息内容确定把消息发往那个 Message Queue ，返回被
+选中的 Message Queue 。 
+
 # (5)Broker 接受消息并保存
 
 1.`SendMessageProcessor`  用来处理`Producer` 发过来的消息，`processRequest` 方法把字节转化为`RemotingCommand` ，在上一截中提到，发送的消息最后会被转化为一个`RemotingCommand` 对象
@@ -457,6 +476,8 @@ msg.setDelayTimeLevel(level);
 private String messageDelayLevel = "1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h";
 ```
 
+比如 setDelayTimeLevel(3 ） 表示延迟 10s 
+
 ## Broker 存储定时消息
 
 - 🦅 存储消息时，延迟消息进入 `Topic` 为 `SCHEDULE_TOPIC_XXXX`。
@@ -464,7 +485,55 @@ private String messageDelayLevel = "1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m
 
 
 
+# 消息消费
 
+消息消费有两种方式，对应的接口分别为：`DefaultMQPushConsumer`、`DefaultMQPullConsumer`
+
+
+
+## DefaultMQPullConsumer
+
+需要自己维护 Offset
+
+# 源码
+
+## ProcessQueue
+
+ProcessQueue 对象里主要的内容是一个 TreeMap 和 一个读写锁 。 TreeMap 里以 Message Queue 的 Offset 作为 Key ，以消息内容的引用为 Value ，保存了所有从 MessageQueue 获取到，但是还未被处理的消息； 读写锁控制着多个线 程对 TreeMap 对象的并发访问 。
+
+有 了 ProcessQueue 对象，流量控制就方便和灵活多了 ， 客户端在每次 Pull请求前会做下面三个判断来控制流量， 如代码清单 3-6 所示 。 
+
+```java
+//org.apache.rocketmq.client.impl.consumer.DefaultMQPushConsumerImpl#pullMessage
+//消息个数
+long cachedMessageCount = processQueue.getMsgCount().get();
+//消息总大小
+long cachedMessageSizeInMiB = processQueue.getMsgSize().get() / (1024 * 1024);
+
+//判断获取但还未处理的消息个数
+if (cachedMessageCount > this.defaultMQPushConsumer.getPullThresholdForQueue()) {
+	this.executePullRequestLater(pullRequest, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL);
+	if ((queueFlowControlTimes++ % 1000) == 0) {
+		log.warn(
+			"the cached message count exceeds the threshold {}, so do flow control, minOffset={}, maxOffset={}, count={}, size={} MiB, pullRequest={}, flowControlTimes={}",
+			this.defaultMQPushConsumer.getPullThresholdForQueue(), processQueue.getMsgTreeMap().firstKey(), processQueue.getMsgTreeMap().lastKey(), cachedMessageCount, cachedMessageSizeInMiB, pullRequest, queueFlowControlTimes);
+	}
+	return;
+}
+
+if (cachedMessageSizeInMiB > this.defaultMQPushConsumer.getPullThresholdSizeForQueue()) {
+	this.executePullRequestLater(pullRequest, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL);
+	if ((queueFlowControlTimes++ % 1000) == 0) {
+		log.warn(
+			"the cached message size exceeds the threshold {} MiB, so do flow control, minOffset={}, maxOffset={}, count={}, size={} MiB, pullRequest={}, flowControlTimes={}",
+			this.defaultMQPushConsumer.getPullThresholdSizeForQueue(), processQueue.getMsgTreeMap().firstKey(), processQueue.getMsgTreeMap().lastKey(), cachedMessageCount, cachedMessageSizeInMiB, pullRequest, queueFlowControlTimes);
+	}
+	return;
+}
+```
+
+PushConsumer 会判断获取但还未处理的消息个数、消息总大小、 Offset 的跨度，任何一个值超过设定的大小就隔一段时间再拉取消息，从而达到流量控制的目的 。 此外 ProcessQueue 还可以辅助实现顺序消费的
+逻辑， 。 
 
 
 
