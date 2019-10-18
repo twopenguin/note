@@ -453,11 +453,73 @@ PutMessageResult putMessageResult = null;
 putMessageResult = this.brokerController.getMessageStore().putMessage(msgInner);
 ```
 
-# (6).message存储
+#Broker
+
+## (6).message存储
 
 在上面一节中最后一步`putMessage` 最终是调用`CommitLog` 来进行消息的存储
 
+### 概念介绍
 
+消息真正的物理存储文件是 CommitLog, ConsumeQueue 是消息的逻辑队列，类似数据库的索引文件，存储的是指向物理存储的地址。  
+
+每个 Topic 下的每个 Message Queue 都有一个对应的 ConsumeQueue 文件 
+
+## 高可用性机制
+
+### Broker高可用
+
+RocketMQ 分布式集群是通过 `Master `和 `Slave` 的配合达到高可用性的，首先说一下 Master 和 Slave 的区别：
+
+- 在 Broker 的配 置 文件中，参数 brokerId 的值为 0 表明这个 Broker 是 Master，大于 0 表 明这个 Broker 是 Slave 
+- 同时 brokerRole 参数 也会说明这个 Broker 是 Master 还是 Slave 。 
+
+Master 角色的 Broker 支持读和写， Slave 角色的 Broker 仅支持读
+
+也就是 Producer 只能和 Master 角色的 Broker 连接 写人消息； Consumer 可以连接 Master 角色的Broker ，也可以连接 Slave 角色的 Broker 来读取消息 。 
+
+### 消费端的高可用
+
+在 Consumer 的配置文件中，并不需要设置是从 Master 读还是从 Slave读，当 Master 不可用或者繁忙的时候， Consumer 会被自动切换到从 S lave 读 。**有了自动切换 Consumer 这种机制**，当一个 Master 角色的机器出现故障后，Consumer 仍然可以从 Slave 读取消息，不影响 Consumer 程序 。 这就达到了消费端的高可用性 。 
+
+### 发送端的高可用
+
+在创建 Topic 的时候，把 Topic 的多个Message Queue 创建在多个 Broker 组上（相同 Broker 名称，不同 brokerId 的机器组成一个 Broker 组），这样当 一个 Broker 组的 Master 不可用后，其他组的 Master 仍然可用， Producer 仍然可以发送消息 。 **RocketMQ 目前还不支持把Slave 自动转成 Master** ，如果机器资源不足，需要把 Slave 转成 Master ，则要手动停止 Slave 角色的 Broker ，更改配置文件，用新的配置文件启动 Broker。 
+
+## 同步刷盘和异步刷盘
+
+消息在通过 Producer 写人 RocketMQ 的时候，有两种写磁盘方式，同步刷盘还是异步刷盘，是通过 Broker 配置文件里的 flushDiskType 参数设置的，这个参数被配置成 SYNC FLUSH 、 ASYNC FLUSH 中的一个 。 
+
+下面逐一介绍 ：
+
+### 异步刷盘方式：
+
+在返回写成功状态时 ，消息可能只是被写人了内存的PAGECACHE ，写操作的返回快，吞吐量大 ；当内存里的消息量积累到一定程度时 ，统一触发写磁盘动作，快速写人 。 
+
+### 同步刷盘方式：
+
+在返回写成功状态时，消息已经被写人磁盘 。 具体流程是，消息、写入内存的 PAGECACHE 后，立刻通知刷盘线程刷盘，然后等待刷盘完成，刷盘线程执行完成后唤醒等待的线程，返回消息写成功的状态 。 
+
+## 同步复制和异步复制
+
+## 顺序消息
+
+### 全局顺序消息 
+
+### 部分顺序消息 
+
+## 消息重复问题 
+
+对分布式消息队列来说，同时做到确保一定投递和不重复投递是很难的，也就是所谓的“有且仅有一次” 。 在鱼和熊掌不可兼得的情况下， RocketMQ 选择了**确保一定投递**，保证消息不丢失，但有可能造成消息重复 。 
+
+消息重复一般情况下不会发生，但是如果消息量大，网络有波动，消息重
+复就是个大概率事件 。 比如 Producer 有个函数 setRetryTimesWhenSendFailed,
+设置在同步方式下自动重试的次数，默认值是 2 ，这样当第一次发送消息时，
+Broker 端接收到了消息但 是没有正 确返回发送成功的状态，就造成了消息
+重复 。
+解决消息重复有两种方法：第一种方法是保证消费逻辑的幕等性（多次调
+用和一次调用效果相同）；另一种方法是维护一个巳消费消息的记录，消费前查
+询这个消息是否被消费过 。 这两种方法都需要使用者自己实现 。 
 
 # (7).定时消息
 
