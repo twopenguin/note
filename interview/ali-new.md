@@ -225,7 +225,7 @@ socket的实现部分, 就是系统协议栈部分， 应该包含了 网络层 
 
 ##Project
 
-**项目中使用的设计模式**
+### 项目中使用的设计模式
 
 模板方法、
 
@@ -234,6 +234,10 @@ socket的实现部分, 就是系统协议栈部分， 应该包含了 网络层 
 建造者模式：Protobuf ,生成的协议对象在构建的时候
 
 责任链模式：Netty 的 ChannelPipeline 基于责任链模式开发
+
+### 你觉得项目里给里最大的挑战是什么？ 
+
+
 
 ## Framework
 
@@ -575,6 +579,8 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 
 
+#### 讲一下Springboot的启动流程
+
 
 
 ####starter 命名格式
@@ -668,6 +674,12 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 ### Mybatis
 
+####  Mybatis的mapper文件中resultType和resultMap的区别
+
+使用resultType进行输出映射，只有查询出来的列名和pojo中的属性名一致，该列才可以映射成功。
+
+ 如果查询出来的列名和pojo的属性名不一致，通过定义一个resultMap对列名和pojo属性名之间作一个映射关系。
+
 ### Netty
 
 #### 简单介绍 Netty 的核心组件？
@@ -707,6 +719,10 @@ Reactor 有 3 种模型实现：
 - 通常零拷贝技术还能够减少用户空间和操作系统内核空间之间的上下文切换
 
 https://www.jianshu.com/p/e76e3580e356
+
+#### Netty应用在哪些中间件和框架中呢？ 
+
+Dubbo、RocketMQ作为底层通信框架、Avro IPC
 
 ## Network
 
@@ -767,6 +783,39 @@ LinkedList 明显更大，因为每个节点有很多的额外数据，比如向
 ###Map
 
 #### HashMap
+
+##### 为什么HashMap的容量是2的幂次？
+
+1. 因为位运算的速度比取模快  
+2. 如果要使用为位运算取模那么使用这种方式： return h & (length-1);   
+3. 使用这种位运算取模的方式，只有当容量为2的幂次的时候，才能使用所有空间
+
+
+
+##### Hashmap为什么不用平衡树？ 
+
+红黑树和AVL树都是**最常用的平衡二叉搜索树**，它们的查找、删除、修改都是O(lgn) time
+
+AVL树和红黑树有几点比较和区别：
+ （1）AVL树是更加严格的平衡，因此可以提供更快的查找速度，一般读取查找密集型任务，适用AVL树。
+ （2）红黑树更适合于插入修改密集型任务。
+ （3）通常，AVL树的旋转比红黑树的旋转更加难以平衡和调试。
+
+**总结**：
+ （1）AVL以及红黑树是高度平衡的树数据结构。它们非常相似，真正的区别在于在任何添加/删除操作时完成的旋转操作次数。
+ （2）两种实现都缩放为a O(lg N)，其中N是叶子的数量，但实际上AVL树在查找密集型任务上更快：利用更好的平衡，树遍历平均更短。另一方面，插入和删除方面，AVL树速度较慢：需要更高的旋转次数才能在修改时正确地重新平衡数据结构。
+ （3）在AVL树中，从根到任何叶子的最短路径和最长路径之间的差异最多为1。在红黑树中，差异可以是2倍。
+ （4）两个都给O（log n）查找，但平衡AVL树可能需要O（log n）旋转，而红黑树将需要最多两次旋转使其达到平衡（尽管可能需要检查O（log n）节点以确定旋转的位置）。旋转本身是O（1）操作，因为你只是移动指针。
+
+
+
+#####HashMap在并发情况下会出现什么现象
+
+1、多线程put操作后，get操作导致死循环。
+2、多线程put非NULL元素后，get操作得到NULL值。
+3、多线程put操作，导致元素丢失。
+
+http://www.cnblogs.com/ITtangtang/p/3966467.html
 
 ##### put确定元素插入位置
 
@@ -851,7 +900,7 @@ class LRUCache<K, V> extends LinkedHashMap<K, V> {
 
 
 
-####HashMap和Hashtable区别
+####HashMap和HashTable区别
 
 - 1、Hashtable 继承 Dictionary ，HashMap 继承的是 Java2 出现的 Map 接口。
 - 2、HashMap 去掉了 Hashtable 的 contains 方法，但是加上了 containsValue 和 containsKey 方法。
@@ -865,21 +914,7 @@ class LRUCache<K, V> extends LinkedHashMap<K, V> {
 - 一是，HashTable 是遗留类，内部实现很多没优化和冗余。
 - 二是，即使在多线程环境下，现在也有同步的 ConcurrentHashMap 替代，没有必要因为是多线程而用 Hashtable 。
 
-#### 为什么HashMap的容量是2的幂次？
 
-1. 因为位运算的速度比取模快  
-2. 如果要使用为位运算取模那么使用这种方式： return h & (length-1);   
-3. 使用这种位运算取模的方式，只有当容量为2的幂次的时候，才能使用所有空间
-
-
-
-####HashMap在并发情况下会出现什么现象
-
-1、多线程put操作后，get操作导致死循环。
-2、多线程put非NULL元素后，get操作得到NULL值。
-3、多线程put操作，导致元素丢失。
-
-http://www.cnblogs.com/ITtangtang/p/3966467.html
 
 
 
@@ -989,7 +1024,7 @@ wait（三个）、notify、notifyAll、hashcode、equles、toString、clone、g
 
 
 
-## 并发
+## 线程与并发
 
 ###偏理论
 
@@ -1076,6 +1111,14 @@ Java中活锁和死锁有什么区别？
 #### 说说 Java 内存模型
 
 ###并发包
+
+#### CLH同步队列是怎么实现非公平和公平的？
+
+首先解释CLH 就是 AQS 内部维护的一个FIFO队列，该队列就是CLH同步队列。
+
+CLH同步队列是一个FIFO双向队列，AQS依赖它来完成同步状态的管理，当前线程如果获取同步状态失败时，AQS则会将当前线程已经等待状态等信息构造成一个节点（Node）并将其加入到CLH同步队列，同时会阻塞当前线程，当同步状态释放时，会把首节点唤醒（公平锁），使其再次尝试获取同步状态
+
+ 在CLH同步队列中，一个节点表示一个线程，它保存着线程的引用（thread）、状态（waitStatus）、前驱节点（prev）、后继节点（next） 
 
 #### Atomic 类的原理是
 
@@ -1339,6 +1382,14 @@ SQL语句的优化（收效甚微）
 
 ------
 
+####  如果你发现你的sql语句始终走另一个索引，但是你希望它走你想要的索引，怎么办？ 
+
+在查询语句，表的后面加上 use index(XXX)，比如：
+
+```sql
+select emp_no,salary from salaries use index(s_f_t) where emp_no<11010 and salary<60000
+```
+
 ### Redis
 
 #### 为什么 Redis 单线程模型也能效率这么高？
@@ -1383,6 +1434,10 @@ Redis 提供了 6 种数据淘汰策略：
 4. allkeys-lru
 5. allkeys-random
 6. no-enviction
+
+#### 讲一下Redis分布式锁的实现 
+
+
 
 ## 中间件
 
@@ -1441,6 +1496,10 @@ RocketMQ中的负载均衡都在Client端完成，具体来说的话，主要可
 #####  Producer的负载均衡
 
 Producer端在发送消息的时候，会先根据Topic找到指定的TopicPublishInfo，在获取了TopicPublishInfo路由信息后，RocketMQ的客户端在默认方式下selectOneMessageQueue()方法会从TopicPublishInfo中的messageQueueList中选择一个队列（MessageQueue）进行发送消息。具体的容错策略均在MQFaultStrategy这个类中定义。这里有一个sendLatencyFaultEnable开关变量，如果开启，在随机递增取模的基础上，再过滤掉not available的Broker代理。所谓的"latencyFaultTolerance"，是指对之前失败的，按一定的时间做退避。例如，如果上次请求的latency超过550Lms，就退避3000Lms；超过1000L，就退避60000L；如果关闭，采用随机递增取模的方式选择一个队列（MessageQueue）来发送消息，latencyFaultTolerance机制是实现消息发送高可用的核心关键所在。
+
+### Nginx 
+
+#### Nginx负载均衡时是如何判断某个节点挂掉了？
 
 ### Kafka
 
@@ -1532,6 +1591,16 @@ TreeMap、TreeSet以及JDK1.8之后的HashMap底层都用到了红黑树，以�
 2. 多个Hash 函数来hash Key，把每个hash结果对应位置置为0，
 3. 在做isExist操作的时候，如果多个hash结果位置上有一个为0，就表示此key不存在
 4. 布隆过滤器，只能确定不存在和可能存在，不能删除key
+
+### 给一个set打印出所有子集
+
+### 多线程从多个文件中读入数据，写到同一个文件中
+
+### 判断ip是否在给定范围内
+
+### 打乱一副扑克牌，不能用额外空间，证明为什么是随机的
+
+
 
 ## 缓存
 
@@ -1828,6 +1897,14 @@ Leader（领导）
 - **数据一致性问题**。数据从主节点转到从节点必然会有一个延时的时间窗口，这个时间 窗口会导致主从节点之间的数据不一致。某一时刻，在主节点和从节点中 A 数据的值都为 X， 之后将主节点中 A 的值修改为 Y，那么在这个变更通知到从节点之前，应用读取从节点中的 A 数据的值并不为最新的 Y，由此便产生了数据不一致的问题。
 - **延时问题**。类似 Redis 这种组件，数据从写入主节点到同步至从节点中的过程需要经 历网络→主节点内存→网络→从节点内存这几个阶段，整个过程会耗费一定的时间。而在 Kafka 中，主从同步会比 Redis 更加耗时，它需要经历网络→主节点内存→主节点磁盘→网络→从节 点内存→从节点磁盘这几个阶段。对延时敏感的应用而言，主写从读的功能并不太适用。
 
+#### 消息队列
+
+##### 保证消息可靠性的做法
+
+消息从发送端应用到接收端应用，中间有三个阶段需要保证可靠，分别是消息发送者把消息发送到消息中间件，消息中间件把消息存入消息存储，消息中间件把消息投递给消息消费者。
+
+所以我们要保证这三个阶段都可靠，才能够保证最终消息的可靠。
+
 
 
 ### 做服务发现常用的框架
@@ -1857,6 +1934,58 @@ Leader（领导）
 一致性Hash
 
 最小活跃数或者最快响应
+
+### 分布式session存储方案
+
+四个方案都是可行的，但是对于大型网站来说，Session Sticky和Session数据集中存储是比较好的方案。
+
+《大型网站系统与[Java](http://lib.csdn.net/base/javaee)中间价实践》
+
+#### Session Stick
+
+ **Session Stick** 方案即将客户端的每次请求都转发至同一台服务器，这就需要负载均衡器能够根据每次请求的会话标识（SessionId）来进行请求转发 
+
+这种方案实现比较简单，对于Web服务器来说和单机的情况一样。但是可能会带来如下问题：
+
+1. 如果有一台服务器宕机或者重启，那么这台机器上的会话数据会全部丢失。
+
+2. 会话标识是应用层信息，那么负载均衡要将同一个会话的请求都保存到同一个Web服务器上的话，就需要进行应用层（第7层）的解析，这个开销比第4层大。
+
+3. 负载均衡器将变成一个有状态的节点，要将会话保存到具体Web服务器的映射。和无状态节点相比，内存消耗更大，容灾方面也会更麻烦。
+
+#### Session Replication
+
+Session Replication 的方案则不对负载均衡器做更改，而是在Web服务器之间增加了会话数据同步的功能，各个服务器之间通过同步保证不同Web服务器之间的Session数据的一致性
+
+Session Replication 方案对负载均衡器不再有要求，但是同样会带来以下问题：
+
+1. 同步Session数据会造成额外的网络带宽的开销，只要Session数据有变化，就需要将新产生的Session数据同步到其他服务器上，服务器数量越多，同步带来的网络带宽开销也就越大。
+
+2. 每台Web服务器都需要保存全部的Session数据，如果整个集群的Session数量太多的话，则对于每台机器用于保存Session数据的占用会很严重。
+
+#### Session 数据集中存储
+
+Session 数据集中存储方案则是将集群中的所有Session集中存储起来，Web服务器本身则并不存储Session数据，不同的Web服务器从同样的地方来获取Session
+
+相对于Session Replication方案，此方案的Session数据将不保存在本机，并且Web服务器之间也没有了Session数据的复制，但是该方案存在的问题在于：
+
+1. 读写Session数据引入了网络操作，这相对于本机的数据读取来说，问题就在于存在时延和不稳定性，但是通信发生在内网，则问题不大。
+
+2. 如果集中存储Session的机器或集群出现问题，则会影响应用。
+
+#### Cookie Based
+
+Cookie Based 方案是将Session数据放在Cookie里，访问Web服务器的时候，再由Web服务器生成对应的Session数据
+
+但是Cookie Based 方案依然存在不足：
+
+1. Cookie长度的限制。这会导致Session长度的限制。 
+
+2. 安全性。Seesion数据本来是服务端数据，却被保存在了客户端，即使可以加密，但是依然存在不安全性。
+
+3. 带宽消耗。这里不是指内部Web服务器之间的宽带消耗，而是数据中心的整体外部带宽的消耗。
+
+4. 性能影响。每次HTTP请求和响应都带有Seesion数据，对Web服务器来说，在同样的处理情况下，响应的结果输出越少，支持的并发就会越高。
 
 ### 分布式事务了解吗？你们如何解决分布式事务问题的？
 
