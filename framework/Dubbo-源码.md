@@ -66,17 +66,19 @@ dubbo的原理是怎么样的?请简单谈谈
 
 从``ServiceConfig``  的 `export`开始服务注册
 
+## doExportUrls
+
 依次进入`doExportUrls`方法：
 
 ```java
 @SuppressWarnings({"unchecked", "rawtypes"})
 private void doExportUrls() {
-    List<URL> registryURLs = loadRegistries(true);
+    List<URL> registryURLs = loadRegistries(true);		// 1
     for (ProtocolConfig protocolConfig : protocols) {
         String pathKey = URL.buildKey(getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), group, version);
         ProviderModel providerModel = new ProviderModel(pathKey, ref, interfaceClass);
         ApplicationModel.initProviderModel(pathKey, providerModel);
-        doExportUrlsFor1Protocol(protocolConfig, registryURLs);
+        doExportUrlsFor1Protocol(protocolConfig, registryURLs);  // 2
     }
 }
 ```
@@ -85,9 +87,59 @@ private void doExportUrls() {
 
 1.加载所有的注册中心的地址：`loadRegistries(true)`
 
+2.针对每个注册方式，进行 export
+
+## doExportUrlsFor1Protocol
+
+进入`doExportUrlsFor1Protocol` 方法：
+
 
 
 
 
 # 服务发现
+
+
+
+# Transport
+
+ **transport** 网络传输层：抽象 mina 和 netty 为统一接口，以 Message 为中心，扩展接口为 Channel, Transporter, Client, Server, Codec   
+
+
+
+
+
+消费者向服务提供者发送的请求到服务端后：
+
+***
+
+
+
+被封装为`ChannelEventRunnable`，其中包括message
+
+
+
+***
+
+在`DubboProtocal` 的 `private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {}`  是 new 一个`ExchangeHandlerAdapter`
+
+到了`ExchangeHandlerAdapter#reply` 就会尝试获取 `Invoker` 然后执行调用，获取的步骤如下：
+
+```java
+//ExchangeHandlerAdapter
+Invoker<?> invoker = getInvoker(channel, inv);
+```
+
+## 最原始的`Invoker` 如何创建
+
+```java
+//ServiceConfig.exportLocal
+PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, local)
+```
+
+`Exporter` 的封装
+
+
+
+
 

@@ -672,6 +672,18 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 1. 先来说说服务提供者的注册（使用zookeeper），在`RegistryProtocol` 的 `export` 方法注册的时候，会向Zookeeper注册临时节点
 
+#### 服务发布过程中做了哪些事？
+
+构建好`ServiceConfig` 对象
+
+调用`ServiceConfig` 对象的 `export` 方法，开始发布
+
+首先会利用 Factory 构建最原始的`Invoker` 对象，这个对象封装了实际的类实现，也就是ref
+
+`org.apache.dubbo.rpc.protocol.ProtocolFilterWrapper#buildInvokerChain` 这个接口用来封装原始`Invoker` 和 `Filter` 链，返回的也是一个`Invoker` ,我的理解是保证原始`Invoker`
+
+
+
 ### Mybatis
 
 ####  Mybatis的mapper文件中resultType和resultMap的区别
