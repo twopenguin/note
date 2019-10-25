@@ -6,8 +6,6 @@ dubbo中"读接口"和"写接口"有什么区别?
 
 简单谈谈你对一致性哈希算法的认识？
 
-服务发布过程中做了哪些事？
-
 dubbo都有哪些协议,他们之间有什么特点,缺省值是什么？
 
 什么是本地暴露和远程暴露,他们的区别？
@@ -137,7 +135,25 @@ Invoker<?> invoker = getInvoker(channel, inv);
 PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, local)
 ```
 
-`Exporter` 的封装
+## `Exporter` 的封装
+
+```java
+
+protocol.export(wrapperInvoker);
+```
+
+## 包装原始 `Invoker` 和 `Filter`
+
+```java
+//ProtocolFilterWrapper
+public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+    if (REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
+        return protocol.export(invoker);
+    }
+    //这儿
+    return protocol.export(buildInvokerChain(invoker, SERVICE_FILTER_KEY, CommonConstants.PROVIDER));
+}
+```
 
 
 

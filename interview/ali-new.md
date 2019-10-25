@@ -680,7 +680,9 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 首先会利用 Factory 构建最原始的`Invoker` 对象，这个对象封装了实际的类实现，也就是ref
 
-`org.apache.dubbo.rpc.protocol.ProtocolFilterWrapper#buildInvokerChain` 这个接口用来封装原始`Invoker` 和 `Filter` 链，返回的也是一个`Invoker` ,我的理解是保证原始`Invoker`
+`ProtocolFilterWrapper#buildInvokerChain` 这个接口用来封装原始`Invoker` 和 `Filter` 链，返回的也是一个`Invoker` ,我的理解是保证原始`Invoker`
+
+针对具体的协议调用`Protocol#export` 方法，开始开启服务，并注册
 
 
 
