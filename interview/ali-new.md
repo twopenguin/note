@@ -368,11 +368,105 @@ JSR250 规范中使用`@PostConstruct` 在代码中哪里实现的留待以后�
 
 ##### 讲讲Spring事务的传播属性
 
+一个开始事务的方法A调用开启了事务的方法B，方法B是用自己的事务还是用A的事务，这个就叫事务的传播属性。
+
+`@Transactional` 注解可以使用 `propagation` 进行传播属性的设置，默认的传播属性如下：
+
+```java
+Propagation propagation() default Propagation.REQUIRED;
+```
+
+- PROPAGATION_REQUIRED：如果当前没有事务，就新建一个事务，如果已经存在一个事务中，加入到这个事务中。这是最常见的选择。
+- PROPAGATION_SUPPORTS：支持当前事务，如果当前没有事务，就以非事务方式执行。
+- PROPAGATION_MANDATORY：使用当前的事务，如果当前没有事务，就抛出异常。
+- PROPAGATION_REQUIRES_NEW：新建事务，如果当前存在事务，把当前事务挂起。
+- PROPAGATION_NOT_SUPPORTED：以非事务方式执行操作，如果当前存在事务，就把当前事务挂起。
+- PROPAGATION_NEVER：以非事务方式执行，如果当前存在事务，则抛出异常。
+- PROPAGATION_NESTED：如果当前存在事务，则在嵌套事务内执行。如果当前没有事务，则执行与PROPAGATION_REQUIRED类似的操作。
+
+常用的主要有Required，RequiresNew，Nested三种。
+
+- Required：简单理解就是事务方法会判断是否存在事务，有事务就用已有的，没有就重新开启一个。
+- RequiresNew：简单理解就是开启新事务，若当前已有事务，挂起当前事务。新开启的事务和之前的事务无关，拥有自己的锁和隔离级别，可以独立提交和回滚，内层事务执行期间，外层事务挂起，内层事务执行完成后，外层事务恢复执行。
+- Nested：简单理解就是嵌套事务，如果外部事务回滚，则嵌套事务也会回滚！！！外部事务提交的时候，嵌套它才会被提交。嵌套事务回滚不会影响外部事务。子事务是上层事务的嵌套事务，在子事务执行之前会建立savepoint，嵌套事务的回滚会回到这个savepoint，不会造成父事务的回滚。
+
+ 
+
 ##### Spring如何管理事务的
 
 ####Spring怎么解决循环依赖
 
+在上面Bean的生命周期中说明了创建bean的三个流程：
 
+1. 实例化 Bean 对象 （createBeanInstance）
+
+2. 属性注入(populateBean)
+3. 初始化数据(initializeBean)
+
+而我们解决循环依赖的关键就在上面的第一步和第二步之间，有如下的代码：
+
+```java
+// 当一个 Bean 满足三个条件时，则调用 #addSingletonFactory(...) 方法，将它添加到缓存中
+//    单例
+//    运行提前暴露 bean
+//    当前 bean 正在创建中
+
+boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
+		isSingletonCurrentlyInCreation(beanName));
+if (earlySingletonExposure) {
+	if (logger.isTraceEnabled()) {
+		logger.trace("Eagerly caching bean '" + beanName +
+				"' to allow for resolving potential circular references");
+	}
+	addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
+}
+
+//进入 addSingletonFactory 方法
+protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFactory) {
+	Assert.notNull(singletonFactory, "Singleton factory must not be null");
+	synchronized (this.singletonObjects) {
+		if (!this.singletonObjects.containsKey(beanName)) {
+			this.singletonFactories.put(beanName, singletonFactory);
+			this.earlySingletonObjects.remove(beanName);
+			this.registeredSingletons.add(beanName);
+		}
+	}
+}
+```
+
+我们看见出现了几个缓存，这里需要关注一下`singletonFactories`  放入，`earlySingletonObjects` 移出，
+
+然后在接下来的`populateBean` 会查找属性的依赖，尝试使用getBean 方法来获取依赖的Bean，最后会尝试通过`getSingleton` 方法来获取，代码如下：
+
+```java
+protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+	Object singletonObject = this.singletonObjects.get(beanName);
+	if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+		synchronized (this.singletonObjects) {
+			singletonObject = this.earlySingletonObjects.get(beanName);
+			if (singletonObject == null && allowEarlyReference) {
+				ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+				if (singletonFactory != null) {
+					singletonObject = singletonFactory.getObject();
+					this.earlySingletonObjects.put(beanName, singletonObject);
+					this.singletonFactories.remove(beanName);
+				}
+			}
+		}
+	}
+	return singletonObject;
+}
+```
+
+其实就是尝试从下面的三级缓存获取，
+
+```
+singletonObjects	//第一级
+earlySingletonObjects	//第二级
+singletonFactories	//第三级
+```
+
+最后举个例子：A对象依赖B，B对象依赖A，假设A先把doCreateBean，这个时候再只想到populateBean方法时，也就是准备填充A的属性依赖B的时候，会从getSingleton 方法来获取B，但是B还没有创建，如实启动B的创建，当走到B的doCreateBean 的时候，也会填充依赖A，其实这个同理会通过`getSingleton ` 尝试从三级缓存中加载，这个时候会是成功的，所以最终B先创建好。`singletonObjects` 中放入最终表示完整创建好的单例Bean，B会先放入，A后放入。
 
 #### FactoryBean
 
@@ -1358,6 +1452,8 @@ mysql 的 explain 命令，字段key如果为null ，表示没有使用索引
 
 #### 索引什么时候会失效变成全表扫描
 
+
+
 #### Mysql性能优化
 
 **可以从如下的方向提升mysql的性能：**
@@ -1921,6 +2017,22 @@ Leader（领导）
 
 
 
+### 解决主从复制延迟有几种常见的方法  
+
+1. 写操作后的读操作指定发给数据库主服务器
+   例如，注册账号完成后，登录时读取账号的读操作也发给数据库主服务器。这种方式和业务强绑
+   定，对业务的侵入和影响较大，如果哪个新来的程序员不知道这样写代码，就会导致一个
+   bug。
+2. 读从机失败后再读一次主机
+   这就是通常所说的“二次读取”，二次读取和业务无绑定，只需要对底层数据库访问的 API 进
+   行封装即可，实现代价较小，不足之处在于如果有很多二次读取，将大大增加主机的读操作压
+   力。例如，黑客暴力破解账号，会导致大量的二次读取操作，主机可能顶不住读操作的压力从而
+   崩溃。
+3. 关键业务读写操作全部指向主机，非关键业务采用读写分离
+   例如，对于一个用户管理系统来说，注册 + 登录的业务读写操作全部访问主机，用户的介绍、
+   爱好、等级等业务，可以采用读写分离，因为即使用户改了自己的自我介绍，在查询时却看到了
+   自我介绍还是旧的，业务影响与不能登录相比就小很多，还可以忍受。  
+
 ### 做服务发现常用的框架
 
 - zookeeper
@@ -1948,6 +2060,10 @@ Leader（领导）
 一致性Hash
 
 最小活跃数或者最快响应
+
+### 单点登录
+
+ **在多个应用系统中，只需要登录一次，就可以访问其他相互信任的应用系统** ，一般应用在分布式环境中。
 
 ### 分布式session存储方案
 
