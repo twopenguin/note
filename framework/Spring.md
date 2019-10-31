@@ -1668,6 +1668,301 @@ public class SessionHolderInterceptor extends BaseController {
 
 
 
+要对`Spring Aop`有一个深入的理解，应该先对Bean的生命周期有一个全面的认识。对于`Spring Bean的生命周期`可以参看本人的.......，因为本篇文章主要记录在Aop源码阅读时的重要笔记，所以很多时候直接是开门见山的从源码中找
+##Aop的使用回顾
+###定义被代理类
+```
+public interface IDemoService {
+    String demoHello();
+
+    String normalHello();
+}
+
+@Service
+public class DemoService implements IDemoService {
+    public String demoHello(){
+        System.out.println("hello");
+        return "hello";
+    }
+    
+    public String normalHello(){
+        System.out.println("normal");
+        return "normal";
+    }
+}
+```
+###定义增强类
+```
+@Aspect
+@Component
+public class AspectDemo {
+
+    /**
+     * 定义切点：如果有此注解的地方
+     */
+    @Pointcut("execution(public * com.yummon.braveglory.service.DemoService.demoHello())")
+    public void serviceAspect() {
+    }
+    
+    @Before(value = "serviceAspect()")
+    public void before(){
+        System.out.println("===before===");
+    }
+    
+    @After(value = "serviceAspect()")
+    public void after(){
+        System.out.println("===after===");
+    }
+}
+```
+###测试类
+```
+@EnableAspectJAutoProxy
+@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
+public class PlayertoolApplication {
+
+	public static void main(String[] args) throws IOException {
+		final ConfigurableApplicationContext run = SpringApplication.run(PlayertoolApplication.class, args);
+		final IDemoService bean = run.getBean(IDemoService.class);
+		bean.demoHello();
+		System.in.read();
+	}
+}
+```
+###运行结果
+```
+===before===
+hello
+===after===
+```
+##Aop 原理探索
+
+各位胖友对于Aop可能听过advice、advisor、pointcut、代理、cglib代理、JDK代理等等名词。
+
+###核心类介绍
+各位胖友可能还记得以前Spring Aop 采用XML 配置的时候可以这样配置` <aop:config>`、在Spring的自定义标签中
+在上面的测试类中使用`EnableAspectJAutoProxy ` 注解开启Aop，此注解的定义如下：
+![EnableAspectJAutoProxy 注解定义信息](https://upload-images.jianshu.io/upload_images/6651136-c5bf7988edd5e446.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+进入选中的`AspectJAutoProxyRegistrar` 类
+```java
+//AspectJAutoProxyRegistrar 类
+@Override
+public void registerBeanDefinitions(
+		AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+    //<1>
+	AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
+    //<2>
+	AnnotationAttributes enableAspectJAutoProxy =
+			AnnotationConfigUtils.attributesFor(importingClassMetadata, EnableAspectJAutoProxy.class);
+    //<3>
+	if (enableAspectJAutoProxy != null) {
+		if (enableAspectJAutoProxy.getBoolean("proxyTargetClass")) {
+			AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
+		}
+		if (enableAspectJAutoProxy.getBoolean("exposeProxy")) {
+			AopConfigUtils.forceAutoProxyCreatorToExposeProxy(registry);
+		}
+	}
+}
+```
+<1>：注入Aop的关键处理类
+<2>：获取`EnableAspectJAutoProxy`注解的配置类信息
+<3>：根据配置信息，初始化相应的配置。
+
+继续进入上面的步骤<1>,
+```java
+public static BeanDefinition registerAspectJAnnotationAutoProxyCreatorIfNecessary(
+		BeanDefinitionRegistry registry, @Nullable Object source) {
+
+	return registerOrEscalateApcAsRequired(AnnotationAwareAspectJAutoProxyCreator.class, registry, source);
+}
+```
+终于看到我想给各位胖友说得关键类了，`AnnotationAwareAspectJAutoProxyCreator`类以及其继承体系的类就是Aop的关键实现。
+类我们找到了，然后呢，这个类如此庞大的继承体系，如下图，我们从哪儿入手呢？从Bean的生命周期开始
+![AnnotationAwareAspectJAutoProxyCreator 继承图](https://upload-images.jianshu.io/upload_images/6651136-966ebbea4fd31871.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+
+
+
+
+## 从哪儿开始包装类
+
+在Bean的生命周期那一章我们提到了
+
+请看如下的一段代码：
+```java
+//AbstractAutowireCapableBeanFactory#doCreateBean
+//在 doCreateBean 方法内有这么一段代码
+// Initialize the bean instance.
+Object exposedObject = bean;
+try {
+	populateBean(beanName, mbd, instanceWrapper);
+	exposedObject = initializeBean(beanName, exposedObject, mbd);
+}
+catch (Throwable ex) {
+}
+```
+在`Bean 的生命周期`那章中说过，`populateBean` 和 `initializeBean` 是 Bean的生命周期中非常重要的两个步骤，分别是属性注入 和 初始化Bean。本章要说的`Aop`的原理，就能在`initializeBean` 方法中找到答案（ps：请看一下`exposedObject `这个临时变量的定义，翻译一下就是暴露的对象的意思，也就是说`exposedObject `才才是最终暴露的Bean，这个对象可能是经过处理和包装的代理对象。`initializeBean `传入的是原始的Bean，比如`demoService`）
+
+进入`initializeBean `方法，这个方法同样在Bean的生命周期中，重点讲过，这儿我们直接看本篇的重点：
+```
+if (mbd == null || !mbd.isSynthetic()) {
+    //Bean 的后置处理
+	wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
+}
+```
+
+这儿就是我们理解Aop的入口。在上面的`AnnotationAwareAspectJAutoProxyCreator 继承图` 的右上角表示此关键类是一个`BeanPostProcessor` 、而`applyBeanPostProcessorsAfterInitialization` 方法处理的是`BeanPostProcessor` 的 `postProcessAfterInitialization` 方法，那我们就看`AnnotationAwareAspectJAutoProxyCreator ` 的 `postProcessAfterInitialization` 方法，如下：
+
+```java
+@Override
+public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
+	if (bean != null) {
+		Object cacheKey = getCacheKey(bean.getClass(), beanName);
+		if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+            //如果必要对Bean进行包装或者增强
+			return wrapIfNecessary(bean, beanName, cacheKey);
+		}
+	}
+	return bean;
+}
+```
+
+## wrapIfNecessary
+
+
+
+进入`wrapIfNecessary` 方法
+
+```java
+protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+	//<1>
+    if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
+		return bean;
+	}
+    //<2> 
+	if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
+		return bean;
+	}
+    //<3>
+	if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
+		this.advisedBeans.put(cacheKey, Boolean.FALSE);
+		return bean;
+	}
+
+	// Create proxy if we have advice.
+    //<4>
+	Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+	if (specificInterceptors != DO_NOT_PROXY) {
+        //<5>
+		this.advisedBeans.put(cacheKey, Boolean.TRUE);
+        //<6>
+		Object proxy = createProxy(
+				bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+        //<7>
+		this.proxyTypes.put(cacheKey, proxy.getClass());
+		return proxy;
+	}
+	//<8>
+	this.advisedBeans.put(cacheKey, Boolean.FALSE);
+	return bean;
+}
+```
+
+<1>:
+
+<2>: 如果`advisedBeans` 包含了此Bean，并且为false，表示此Bean 不需要增强了，参看<5><8>这两处代码
+
+<3>: 对于一些需要跳过wrap的bean的判断，有两种情况，一种就是`Advice`、`Advisor`等类的子类，还有一种就是根据`shouldSkip` 来判断，注意这个方法洛，此方法返回true 表示不需要增强，并且会在第一次调用此方法的时候把整个BeanFactory的Advisor（Advisor封装了，pointCut 和 Advice）都加载好，具体我们后面详细展开。
+
+<4>: 获取与当前Bean匹配的Advisor也就是增强器。因为第一次调用上面的`shouldSkip`方法时就已经加载了所有的`Advisor`, 此步骤就是遍历所有的`Advisor`，确定当前处理的Bean 是否有匹配的 `Advisor`。
+
+<5>: 如果表示有匹配的增强器，就`advisedBeans`  的 Bean的值置为TRUE，表示此类需要增强，结合<8>理解
+
+<6>: 创建目标Bean的代理对象，这儿是很重要的一步，下面详细展开
+
+<7>: 在`proxyTypes` 也就是代理类型中加入缓存
+
+<8>: 因为已经增强过了，就把`advisedBeans`  对应的Bean置为False，那么以后就不处理了，结合<2>理解
+
+其实这上面的几个步骤是关键步骤。
+
+
+
+![Advisor内部结构图](https://upload-images.jianshu.io/upload_images/6651136-d2d71ae440af293b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+## buildAspectJAdvisors
+
+```java
+//BeanFactoryAspectJAdvisorsBuilder#buildAspectJAdvisors
+public List<Advisor> buildAspectJAdvisors() {
+	List<String> aspectNames = this.aspectBeanNames;
+
+	if (aspectNames == null) {
+		synchronized (this) {
+			aspectNames = this.aspectBeanNames;
+			if (aspectNames == null) {
+				List<Advisor> advisors = new ArrayList<>();
+				aspectNames = new ArrayList<>();
+				String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
+						this.beanFactory, Object.class, true, false);
+				for (String beanName : beanNames) {
+					if (!isEligibleBean(beanName)) {
+						continue;
+					}
+					// We must be careful not to instantiate beans eagerly as in this case they
+					// would be cached by the Spring container but would not have been weaved.
+					Class<?> beanType = this.beanFactory.getType(beanName);
+					if (beanType == null) {
+						continue;
+					}
+					if (this.advisorFactory.isAspect(beanType)) {
+						aspectNames.add(beanName);
+						AspectMetadata amd = new AspectMetadata(beanType, beanName);
+						if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
+							MetadataAwareAspectInstanceFactory factory =
+									new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
+							List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
+							if (this.beanFactory.isSingleton(beanName)) {
+								this.advisorsCache.put(beanName, classAdvisors);
+							}
+							else {
+								this.aspectFactoryCache.put(beanName, factory);
+							}
+							advisors.addAll(classAdvisors);
+						}
+						//省略部分代码
+					}
+				}
+				this.aspectBeanNames = aspectNames;
+				return advisors;
+			}
+		}
+	}
+
+	if (aspectNames.isEmpty()) {
+		return Collections.emptyList();
+	}
+	List<Advisor> advisors = new ArrayList<>();
+	for (String aspectName : aspectNames) {
+		List<Advisor> cachedAdvisors = this.advisorsCache.get(aspectName);
+		if (cachedAdvisors != null) {
+			advisors.addAll(cachedAdvisors);
+		}
+		else {
+			MetadataAwareAspectInstanceFactory factory = this.aspectFactoryCache.get(aspectName);
+			advisors.addAll(this.advisorFactory.getAdvisors(factory));
+		}
+	}
+	return advisors;
+}
+```
+
+
+
+
+
 # 怎么看Spring的源码
 
 ##创建bean需要什么
