@@ -1894,6 +1894,8 @@ protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) 
 
 ## buildAspectJAdvisors
 
+此方法主要用来在当前BeanFactory中 寻找所有被`Aspect` 注解的Bean，并被转化为Advisor 列表，一个Advisor 代表一个 Aspect Bean的一个方法。
+
 ```java
 //BeanFactoryAspectJAdvisorsBuilder#buildAspectJAdvisors
 public List<Advisor> buildAspectJAdvisors() {
@@ -1907,6 +1909,7 @@ public List<Advisor> buildAspectJAdvisors() {
 				aspectNames = new ArrayList<>();
 				String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 						this.beanFactory, Object.class, true, false);
+                //遍历所有的Bean
 				for (String beanName : beanNames) {
 					if (!isEligibleBean(beanName)) {
 						continue;
@@ -1917,12 +1920,14 @@ public List<Advisor> buildAspectJAdvisors() {
 					if (beanType == null) {
 						continue;
 					}
+                    //<2>:此Bean 是否被Aspect 注解注释
 					if (this.advisorFactory.isAspect(beanType)) {
 						aspectNames.add(beanName);
 						AspectMetadata amd = new AspectMetadata(beanType, beanName);
 						if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
 							MetadataAwareAspectInstanceFactory factory =
 									new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
+                            //创建Advisor
 							List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
 							if (this.beanFactory.isSingleton(beanName)) {
 								this.advisorsCache.put(beanName, classAdvisors);
@@ -1958,6 +1963,30 @@ public List<Advisor> buildAspectJAdvisors() {
 	return advisors;
 }
 ```
+
+## Aop 重要配置参数`proxyTargetClass` 和 `exposeProxy` 说明
+
+```java
+	/**
+	 * Indicate whether subclass-based (CGLIB) proxies are to be created as opposed
+	 * to standard Java interface-based proxies. The default is {@code false}.
+	 */
+	boolean proxyTargetClass() default false;
+
+	/**
+	 * Indicate that the proxy should be exposed by the AOP framework as a {@code ThreadLocal}
+	 * for retrieval via the {@link org.springframework.aop.framework.AopContext} class.
+	 * Off by default, i.e. no guarantees that {@code AopContext} access will work.
+	 * @since 4.3.1
+	 */
+	boolean exposeProxy() default false;
+```
+
+
+
+ Spring提供了JDK动态代理和CGLIB代理两种方式为目标类创建代理，默认情况下，如果目标类实现了一个以上的用户自定义的接口或者目标类本身就是接口，就会使用JDK动态代理，如果目标类本身不是接口并且没有实现任何接口，就会使用CGLIB代理，**如果想强制使用CGLIB代理，则可以将proxy-target-class设置true**， 
+
+expose-proxy用来解决对象内部this调用无法被切面增强的问题，例如我们在A类的对象内部x方法中调用另外一个内部方法y时，y方法不会被切面增强，这时可以配置expose-proxy为true并将this.y()改为((A)AopContext.currentProxy()).y()，即可让y方法被切面增强。 
 
 
 
