@@ -484,7 +484,7 @@ singletonFactories	//第三级
    }
    ```
 
-4. ​
+4. 
 
 #### BeanFactory 和 FactoryBean的区别？
 
@@ -565,7 +565,7 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
    }
    ```
 
-4. ​
+4. 
 
 ### SpringMVC
 
@@ -740,7 +740,7 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 ##### 源码分析
 
-1. ​
+1. 
 
 #### Dubbo监控平台能够动态改变接口的一些设置,其原理是怎样的?
 
@@ -1446,11 +1446,13 @@ mysql 的 explain 命令，字段key如果为null ，表示没有使用索引
 
 聚集索引(聚簇索引或者主键索引):叶子节点存放的是整张表的行记录数据
 
-非聚集索引(二级索引或者非主键索引):叶子节点内容是主键的值,所以使用此类索引后，**回到主键索引树搜索的过程，我们称为回表**
+非聚集索引(二级索引或者非主键索引):叶子节点内容是索引列和主键的值,所以查询的列不仅仅是索引列的话，还需要**回到主键索引树搜索的过程，我们称为回表**
 
 
 
 #### 索引什么时候会失效变成全表扫描
+
+
 
 
 
