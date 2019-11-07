@@ -1576,6 +1576,12 @@ Redis 提供了 6 种数据淘汰策略：
 
 #### 讲一下Redis分布式锁的实现 
 
+#### Redis 底层数据结构
+
+**String 类型**
+
+在Redis内部，String类型通过 int、SDS(simple dynamic string)作为结构存储，int用来存放整型数据，sds存放字节/字符串和浮点型数据。 
+
 
 
 ## 中间件
