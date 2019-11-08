@@ -1584,9 +1584,21 @@ Redis 提供了 6 种数据淘汰策略：
 
 
 
+#### 如何解决redis分布式锁过期时间到了业务没执行完问题
+
+有两种方法：第一种不建议
+
+1. key不过期，需要业务去控制每天redis key对应值做逻辑更新，比如秒杀每天限量，到零点定时置0.
+
+2. redisson框架内部提供监控锁WatchDog，作用是在redisson实例关闭前不断延长锁有效期。默认超时时间为30秒，可通过修改Config.lockWatchdogTimeout指定。比如加锁的时间是30秒.如果加锁的业务没有执行完,那么到 30-10 =  20秒的时候,就会进行一次续期,把锁重置成30秒.那这个时候可能又有同学问了,那业务的机器万一宕机了呢?宕机了定时任务跑不了,就续不了期,那自然30秒之后锁就解开 。为什么是20秒的时候就开始续期，因为redisson 默认是10秒检查一次。
+
 ## 中间件
 
 ### RocketMQ
+
+#### 你们如何使用RocketMQ？
+
+
 
 #### Producer 发送消息有几种方式？
 
@@ -2155,6 +2167,149 @@ public class RedisTool {
 简单来说，就是在eval命令执行Lua代码的时候，Lua代码将被当成一个命令去执行，并且直到eval命令执行完成，Redis才会执行其他命令。
 
 #### 基于Zookeeper实现分布式锁；
+
+主要依靠创建**临时顺序节点**
+
+如果有一把锁，被多个人给竞争，此时多个人会排队，第一个拿到锁的人会执行，然后释放锁
+
+后面的每个人都会去监听排在自己前面的那个人创建的 node 上，一旦某个人释放了锁，排在自己后面的人就会被 zookeeper 给通知，一旦被通知了之后，就 ok 了，自己就获取到了锁，就可以执行代码了
+
+```java
+public class ZooKeeperDistributedLock implements Watcher {
+
+    private ZooKeeper zk;
+    private String locksRoot = "/locks";
+    private String productId;
+    private String waitNode;
+    private String lockNode;
+    private CountDownLatch latch;
+    private CountDownLatch connectedLatch = new CountDownLatch(1);
+    private int sessionTimeout = 30000;
+
+    public ZooKeeperDistributedLock(String productId) {
+        this.productId = productId;
+        try {
+            String address = "192.168.31.187:2181,192.168.31.19:2181,192.168.31.227:2181";
+            zk = new ZooKeeper(address, sessionTimeout, this);
+            connectedLatch.await();
+        } catch (IOException e) {
+            throw new LockException(e);
+        } catch (KeeperException e) {
+            throw new LockException(e);
+        } catch (InterruptedException e) {
+            throw new LockException(e);
+        }
+    }
+
+    public void process(WatchedEvent event) {
+        if (event.getState() == KeeperState.SyncConnected) {
+            connectedLatch.countDown();
+            return;
+        }
+
+        if (this.latch != null) {
+            this.latch.countDown();
+        }
+    }
+
+    public void acquireDistributedLock() {
+        try {
+            if (this.tryLock()) {
+                return;
+            } else {
+                waitForLock(waitNode, sessionTimeout);
+            }
+        } catch (KeeperException e) {
+            throw new LockException(e);
+        } catch (InterruptedException e) {
+            throw new LockException(e);
+        }
+    }
+
+    public boolean tryLock() {
+        try {
+             // 传入进去的locksRoot + “/” + productId
+            // 假设productId代表了一个商品id，比如说1
+            // locksRoot = locks
+            // /locks/10000000000，/locks/10000000001，/locks/10000000002
+            lockNode = zk.create(locksRoot + "/" + productId, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+   
+            // 看看刚创建的节点是不是最小的节点
+             // locks：10000000000，10000000001，10000000002
+            List<String> locks = zk.getChildren(locksRoot, false);
+            Collections.sort(locks);
+    
+            if(lockNode.equals(locksRoot+"/"+ locks.get(0))){
+                //如果是最小的节点,则表示取得锁
+                return true;
+            }
+    
+            //如果不是最小的节点，找到比自己小1的节点
+      int previousLockIndex = -1;
+            for(int i = 0; i < locks.size(); i++) {
+        if(lockNode.equals(locksRoot + “/” + locks.get(i))) {
+                     previousLockIndex = i - 1;
+            break;
+        }
+       }
+       
+       this.waitNode = locks.get(previousLockIndex);
+        } catch (KeeperException e) {
+            throw new LockException(e);
+        } catch (InterruptedException e) {
+            throw new LockException(e);
+        }
+        return false;
+    }
+
+    private boolean waitForLock(String waitNode, long waitTime) throws InterruptedException, KeeperException {
+        Stat stat = zk.exists(locksRoot + "/" + waitNode, true);
+        if (stat != null) {
+            this.latch = new CountDownLatch(1);
+            this.latch.await(waitTime, TimeUnit.MILLISECONDS);
+            this.latch = null;
+        }
+        return true;
+    }
+
+    public void unlock() {
+        try {
+            // 删除/locks/10000000000节点
+            // 删除/locks/10000000001节点
+            System.out.println("unlock " + lockNode);
+            zk.delete(lockNode, -1);
+            lockNode = null;
+            zk.close();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public class LockException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        public LockException(String e) {
+            super(e);
+        }
+
+        public LockException(Exception e) {
+            super(e);
+        }
+    }
+}
+```
+
+#### Redis 和 Zookeeper 两种方式的区别
+
+- Redis分布式锁，需要自己不断去尝试获取锁，比较消耗性能
+- ZooKeeper分布式锁，获取不到锁，注册个监听器即可，不需要不断主动尝试获取锁，性能开销较小
+
+另外一点就是
+
+- 如果Redis获取锁的那个客户端挂了，那么只能等待超时时间之后才能释放锁
+- 而对于ZooKeeper，因为创建的是临时znode，只要客户端挂了，znode就没了，此时就自动释放锁
 
 ### 你使用过哪些负载策略知道的有哪些负载策略
 
