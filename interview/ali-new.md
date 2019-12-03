@@ -2024,6 +2024,18 @@ JMM 就是一组规则，这组规则意在解决在并发编程可能出现的�
 
    这是因为在JDBC规范中明确要求Driver(数据库驱动)类必须向DriverManager注册自己。`com.mysql.jdbc.Driver`类有有一块静态代码`DriverManager.registerDriver(new Driver());`
 
+### CMS（Concurrent Mark Sweep）
+
+#### 当出现 Concurrent Mode Failure 错误的时候，启用什么收集器
+
+答案是`Serial Old` 收集器来进行老年代的垃圾收集。
+
+说明：
+
+什么是`Concurrent Mode Failure`？
+
+由于CMS并发清理阶段用户线程还在运行着，必然会有新的垃圾对象生成，称之为`浮动垃圾（Floating Garbage）`，所以CMS收集器不能像其他的收集器那样等到老年代几乎被填满了再进行收集，需要预留一部分堆空间给用户程序使用，要是CMS运行期间预留的内存无法满足程序需要，就会出现一次`Concurrent Mode Failure`
+
 
 
 
@@ -2440,6 +2452,14 @@ Cookie Based 方案是将Session数据放在Cookie里，访问Web服务器的时
 4. 性能影响。每次HTTP请求和响应都带有Seesion数据，对Web服务器来说，在同样的处理情况下，响应的结果输出越少，支持的并发就会越高。
 
 ### 分布式事务了解吗？你们如何解决分布式事务问题的？
+
+实现分布式事务有以下 3 种基本方法：
+
+- 基于 XA 协议的二阶段提交协议方法；
+- 三阶段提交协议方法；
+- 基于消息的最终一致性方法。
+
+ 其中，基于 XA 协议的二阶段提交协议方法和三阶段提交协议方法，采用了强一致性，遵从 ACID，基于消息的最终一致性方法，采用了最终一致性，遵从 BASE 理论。 
 
 #### 3 XA方案也叫做两阶段提交事务方案.
 
