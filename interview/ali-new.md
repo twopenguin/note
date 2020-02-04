@@ -484,7 +484,7 @@ singletonFactories	//第三级
    }
    ```
 
-4. 
+4. ​
 
 #### BeanFactory 和 FactoryBean的区别？
 
@@ -565,7 +565,7 @@ AbstractAutowireCapableBeanFactory 的  initializeBean 方法中，会调用appl
    }
    ```
 
-4. 
+4. ​
 
 ### SpringMVC
 
@@ -740,7 +740,7 @@ public class RedisAutoConfiguration extends CachingConfigurerSupport {
 
 ##### 源码分析
 
-1. 
+1. ​
 
 #### Dubbo监控平台能够动态改变接口的一些设置,其原理是怎样的?
 
@@ -1804,6 +1804,78 @@ zkClient，Curator
 
 Dubbo 使用的是zkClient
 
+### ElasticSearch
+
+#### es的分布式架构原理能说一下么（es是如何实现分布式的啊）？
+
+**es中存储数据的基本单位是索引**，比如说你现在要在es中存储一些订单数据，你就应该在es中创建一个索引，order_idx，所有的订单数据就都写到这个索引里面去，一个索引差不多就是相当于是mysql里的一张表。index -> type -> mapping -> document -> field。 
+
+index：mysql里的一张表
+
+type：没法跟mysql里去对比，一个index里可以有多个type，每个type的字段都是差不多的，但是有一些略微的差别。 
+
+好比说，有一个index，是订单index，里面专门是放订单数据的。就好比说你在mysql中建表，有些订单是实物商品的订单，就好比说一件衣服，一双鞋子；有些订单是虚拟商品的订单，就好比说游戏点卡，话费充值。就两种订单大部分字段是一样的，但是少部分字段可能有略微的一些差别。
+
+所以就会在订单index里，建两个type，一个是实物商品订单type，一个是虚拟商品订单type，这两个type大部分字段是一样的，少部分字段是不一样的。
+
+很多情况下，一个index里可能就一个type，但是确实如果说是一个index里有多个type的情况，你可以认为index是一个类别的表，具体的每个type代表了具体的一个mysql中的表 
+
+每个type有一个mapping，如果你认为一个type是一个具体的一个表，index代表了多个type的同属于的一个类型，mapping就是这个type的表结构定义，你在mysql中创建一个表，肯定是要定义表结构的，里面有哪些字段，每个字段是什么类型。。。
+
+mapping就代表了这个type的表结构的定义，定义了这个type中每个字段名称，字段是什么类型的，然后还有这个字段的各种配置
+
+实际上你往index里的一个type里面写的一条数据，叫做一条document，一条document就代表了mysql中某个表里的一行给，每个document有多个field，每个field就代表了这个document中的一个字段的值
+
+接着你搞一个索引，这个**索引可以拆分成多个shard**，**每个shard存储部分数据**。
+
+ 
+
+接着就是这个shard的数据实际是有多个备份，就是说**每个shard都有一个primary shard，负责写入数据**，但是还有几个replica shard。primary shard写入数据之后，会将数据**同步到其他几个replica shard**上去。
+
+通过这个replica的方案，每个shard的数据都有多个备份，如果某个机器宕机了，没关系啊，还有别的数据副本在别的机器上呢。高可用了吧。
+
+es集群多个节点，会自动**选举一个节点为master节点**，这个master节点其实就是干一些管理的工作的，比如维护索引元数据拉，**负责切换primary shard和replica shard身份拉，之类的**。
+
+要是master节点宕机了，那么会重新选举一个节点为master节点。
+
+如果是非master节点宕机了，那么会由master节点，让那个宕机节点上的primary shard的身份转移到其他机器上的replica shard。急着你要是修复了那个宕机机器，重启了之后，master节点会控制将缺失的replica shard分配过去，同步后续修改的数据之类的，让集群恢复正常。
+
+
+
+#### es写入数据的工作原理是什么啊？es查询数据的工作原理是什么啊？
+
+##### es写数据过程
+
+1）客户端选择一个node发送请求过去，这个node就是coordinating node（协调节点）
+
+2）coordinating node，对document进行路由，将请求转发给对应的node（有primary shard）
+
+3）实际的node上的primary shard处理请求，然后将数据同步到replica node
+
+4）coordinating node，如果发现primary node和所有replica node都搞定之后，就返回响应结果给客户端
+
+##### es读数据过程 
+
+查询，GET某一条数据，写入了某个document，这个document会自动给你分配一个全局唯一的id，doc id，同时也是根据doc id进行hash路由到对应的primary shard上面去。也可以手动指定doc id，比如用订单id，用户id。
+
+你可以通过doc id来查询，会根据doc id进行hash，判断出来当时把doc id分配到了哪个shard上面去，从那个shard去查询
+
+ 
+
+1）客户端发送请求到任意一个node，成为coordinate node
+
+2）coordinate node对document进行路由，将请求转发到对应的node，此时会使用round-robin随机轮询算法，在primary shard以及其所有replica中随机选择一个，让读请求负载均衡
+
+3）接收请求的node返回document给coordinate node
+
+4）coordinate node返回document给客户端
+
+
+
+#### es在数据量很大的情况下（数十亿级别）如何提高查询性能啊？
+
+#### es生产集群的部署架构是什么？每个索引的数据量大概有多少？每个索引大概有多少个分片？
+
 
 
 ## 算法与数据结构
@@ -2200,641 +2272,58 @@ Leader（领导）
 
 ### 分布式链路追踪使用过哪些
 
-### 如何实现分布式锁
+### 分库分表
 
-目前主要有如下三种方式：
+#### 为什么要分库分表（设计高并发系统的时候，数据库层面该如何设计）？
 
-#### 基于数据库实现分布式锁； 
+随着数据量的增大，无论是单库还是单表，都存在性能瓶颈，sql查询会越来越慢，不足以支撑高并发
 
-#### 基于缓存（Redis等）实现分布式锁； 
+分库是啥意思？就是你一个库一般我们经验而言，最多支撑到并发2000，一定要扩容了，而且一个健康的单库并发值你最好保持在每秒1000左右，不要太大。那么你可以将一个库的数据拆分到多个库中，访问的时候就访问一个库好了。
 
-##### Redis 常规实现：
+#### 用过哪些分库分表中间件？
 
-**加锁代码**
+比较常见的包括：cobar、TDDL、atlas、sharding-jdbc、mycat
 
-```java
-public class RedisTool {
-    private static final String LOCK_SUCCESS = "OK";
-    private static final String SET_IF_NOT_EXIST = "NX";
-    private static final String SET_WITH_EXPIRE_TIME = "PX";
-    /**
-     * 尝试获取分布式锁
-     * @param jedis Redis客户端
-     * @param lockKey 锁
-     * @param requestId 请求标识
-     * @param expireTime 超期时间
-     * @return 是否获取成功
-     */
-    public static boolean tryGetDistributedLock(Jedis jedis, String lockKey, String requestId, int expireTime) {
-        String result = jedis.set(lockKey, requestId, SET_IF_NOT_EXIST, SET_WITH_EXPIRE_TIME, expireTime);
-        if (LOCK_SUCCESS.equals(result)) {
-            return true;
-        }
-        return false;
-    }
-}
-```
+**后两个最常用**
 
-可以看到，我们加锁就一行代码：`jedis.set(String key, String value, String nxxx, String expx, int time)`，这个set()方法一共有五个形参：
+#### 不同的分库分表中间件都有什么优点和缺点？
 
-- 第一个为key，我们使用key来当锁，因为key是唯一的。
-- 第二个为value，我们传的是requestId，很多童鞋可能不明白，有key作为锁不就够了吗，为什么还要用到value？原因就是我们在上面讲到可靠性时，分布式锁要满足第四个条件解铃还须系铃人，通过给value赋值为requestId，我们就知道这把锁是哪个请求加的了，在解锁的时候就可以有依据。requestId可以使用`UUID.randomUUID().toString()`方法生成。
-- 第三个为nxxx，这个参数我们填的是NX，意思是SET IF NOT EXIST，即当key不存在时，我们进行set操作；若key已经存在，则不做任何操作；
-- 第四个为expx，这个参数我们传的是PX，意思是我们要给这个key加一个过期的设置，具体时间由第五个参数决定。
-- 第五个为time，与第四个参数相呼应，代表key的过期时间。
+#### 你们具体是如何对数据库如何进行垂直拆分或水平拆分的？
 
-总的来说，执行上面的set()方法就只会导致两种结果：1. 当前没有锁（key不存在），那么就进行加锁操作，并对锁设置个有效期，同时value表示加锁的客户端。2. 已有锁存在，不做任何操作。
 
-**解锁代码**
 
-```java
-public class RedisTool {
-    private static final Long RELEASE_SUCCESS = 1L;
-    /**
-     * 释放分布式锁
-     * @param jedis Redis客户端
-     * @param lockKey 锁
-     * @param requestId 请求标识
-     * @return 是否释放成功
-     */
-    public static boolean releaseDistributedLock(Jedis jedis, String lockKey, String requestId) {
-        String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
-        Object result = jedis.eval(script, Collections.singletonList(lockKey), Collections.singletonList(requestId));
-        if (RELEASE_SUCCESS.equals(result)) {
-            return true;
-        }
-        return false;
-    }
-}
-```
+#### 现在有一个未分库分表的系统，未来要分库分表，如何设计才可以让系统从未分库分表动态切换到分库分表上？
 
-可以看到，我们解锁只需要两行代码就搞定了！第一行代码，我们写了一个简单的Lua脚本代码，上一次见到这个编程语言还是在《黑客与画家》里，没想到这次居然用上了。第二行代码，我们将Lua代码传到`jedis.eval()`方法里，并使参数KEYS[1]赋值为lockKey，ARGV[1]赋值为requestId。eval()方法是将Lua代码交给Redis服务端执行。
+**双写迁移方案**
 
-那么这段Lua代码的功能是什么呢？其实很简单，首先获取锁对应的value值，检查是否与requestId相等，如果相等则删除锁（解锁）。那么为什么要使用Lua语言来实现呢？因为要确保上述操作是原子性的。 。那么为什么执行eval()方法可以确保原子性，源于Redis的特性
+这个是我们常用的一种迁移方案，比较靠谱一些，不用停机，不用看北京凌晨4点的风景
 
-简单来说，就是在eval命令执行Lua代码的时候，Lua代码将被当成一个命令去执行，并且直到eval命令执行完成，Redis才会执行其他命令。
+简单来说，就是在线上系统里面，之前所有写库的地方，增删改操作，**都除了对老库增删改，都加上对新库的增删改（通过中间件）**，这就是所谓双写，同时写俩库，老库和新库。
 
-#### 基于Zookeeper实现分布式锁；
+然后系统部署之后，新库数据差太远，用之前说的导数工具，**跑起来读老库数据写新库，写的时候要根据gmt_modified这类字段判断这条数据最后修改的时间，除非是读出来的数据在新库里没有，或者是比新库的数据新才会写。**
 
-主要依靠创建**临时顺序节点**
+接着导万一轮之后，有可能数据还是存在不一致，那么就程序自动做一轮**校验**，比对新老库每个表的每条数据，接着如果有不一样的，就针对那些不一样的，**从老库读数据再次写。反复循环**，直到两个库每个表的数据都完全一致为止。 
 
-如果有一把锁，被多个人给竞争，此时多个人会排队，第一个拿到锁的人会执行，然后释放锁
+接着当数据完全一致了，就ok了，基于仅仅使用分库分表的最新代码，重新部署一次，不就仅仅基于分库分表在操作了么，还没有几个小时的停机时间，很稳。所以现在**基本玩儿数据迁移之类的，都是这么干了**。
 
-后面的每个人都会去监听排在自己前面的那个人创建的 node 上，一旦某个人释放了锁，排在自己后面的人就会被 zookeeper 给通知，一旦被通知了之后，就 ok 了，自己就获取到了锁，就可以执行代码了
+#### 如何设计可以动态扩容缩容的分库分表方案？
 
-```java
-public class ZooKeeperDistributedLock implements Watcher {
+核心就是，预先就设定库和表的数量
 
-    private ZooKeeper zk;
-    private String locksRoot = "/locks";
-    private String productId;
-    private String waitNode;
-    private String lockNode;
-    private CountDownLatch latch;
-    private CountDownLatch connectedLatch = new CountDownLatch(1);
-    private int sessionTimeout = 30000;
+1、设定好几台数据库服务器，每台服务器上几个库，每个库多少个表，推荐是32库 * 32表，对于大部分公司来说，可能几年都够了
 
-    public ZooKeeperDistributedLock(String productId) {
-        this.productId = productId;
-        try {
-            String address = "192.168.31.187:2181,192.168.31.19:2181,192.168.31.227:2181";
-            zk = new ZooKeeper(address, sessionTimeout, this);
-            connectedLatch.await();
-        } catch (IOException e) {
-            throw new LockException(e);
-        } catch (KeeperException e) {
-            throw new LockException(e);
-        } catch (InterruptedException e) {
-            throw new LockException(e);
-        }
-    }
+2、路由的规则，orderId 模 32 = 库，orderId / 32 模 32 = 表
 
-    public void process(WatchedEvent event) {
-        if (event.getState() == KeeperState.SyncConnected) {
-            connectedLatch.countDown();
-            return;
-        }
+3、扩容的时候，申请增加更多的数据库服务器，装好mysql，倍数扩容，4台服务器，扩到8台服务器，16台服务器
 
-        if (this.latch != null) {
-            this.latch.countDown();
-        }
-    }
+4、由dba负责将原先数据库服务器的库，迁移到新的数据库服务器上去，很多工具，库迁移，比较便捷
 
-    public void acquireDistributedLock() {
-        try {
-            if (this.tryLock()) {
-                return;
-            } else {
-                waitForLock(waitNode, sessionTimeout);
-            }
-        } catch (KeeperException e) {
-            throw new LockException(e);
-        } catch (InterruptedException e) {
-            throw new LockException(e);
-        }
-    }
+5、我们这边就是修改一下配置，调整迁移的库所在数据库服务器的地址
 
-    public boolean tryLock() {
-        try {
-             // 传入进去的locksRoot + “/” + productId
-            // 假设productId代表了一个商品id，比如说1
-            // locksRoot = locks
-            // /locks/10000000000，/locks/10000000001，/locks/10000000002
-            lockNode = zk.create(locksRoot + "/" + productId, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
-   
-            // 看看刚创建的节点是不是最小的节点
-             // locks：10000000000，10000000001，10000000002
-            List<String> locks = zk.getChildren(locksRoot, false);
-            Collections.sort(locks);
-    
-            if(lockNode.equals(locksRoot+"/"+ locks.get(0))){
-                //如果是最小的节点,则表示取得锁
-                return true;
-            }
-    
-            //如果不是最小的节点，找到比自己小1的节点
-      int previousLockIndex = -1;
-            for(int i = 0; i < locks.size(); i++) {
-        if(lockNode.equals(locksRoot + “/” + locks.get(i))) {
-                     previousLockIndex = i - 1;
-            break;
-        }
-       }
-       
-       this.waitNode = locks.get(previousLockIndex);
-        } catch (KeeperException e) {
-            throw new LockException(e);
-        } catch (InterruptedException e) {
-            throw new LockException(e);
-        }
-        return false;
-    }
+6、重新发布系统，上线，原先的路由规则变都不用变，直接可以基于2倍的数据库服务器的资源，继续进行线上系统的提供服务
 
-    private boolean waitForLock(String waitNode, long waitTime) throws InterruptedException, KeeperException {
-        Stat stat = zk.exists(locksRoot + "/" + waitNode, true);
-        if (stat != null) {
-            this.latch = new CountDownLatch(1);
-            this.latch.await(waitTime, TimeUnit.MILLISECONDS);
-            this.latch = null;
-        }
-        return true;
-    }
 
-    public void unlock() {
-        try {
-            // 删除/locks/10000000000节点
-            // 删除/locks/10000000001节点
-            System.out.println("unlock " + lockNode);
-            zk.delete(lockNode, -1);
-            lockNode = null;
-            zk.close();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            e.printStackTrace();
-        }
-    }
 
-    public class LockException extends RuntimeException {
-        private static final long serialVersionUID = 1L;
-
-        public LockException(String e) {
-            super(e);
-        }
-
-        public LockException(Exception e) {
-            super(e);
-        }
-    }
-}
-```
-
-#### Redis 和 Zookeeper 两种方式的区别
-
-- Redis分布式锁，需要自己不断去尝试获取锁，比较消耗性能
-- ZooKeeper分布式锁，获取不到锁，注册个监听器即可，不需要不断主动尝试获取锁，性能开销较小
-
-另外一点就是
-
-- 如果Redis获取锁的那个客户端挂了，那么只能等待超时时间之后才能释放锁
-- 而对于ZooKeeper，因为创建的是临时znode，只要客户端挂了，znode就没了，此时就自动释放锁
-
-### 你使用过哪些负载策略知道的有哪些负载策略
-
-随机或者带权重随机
-
-轮询或者带权重轮询
-
-一致性Hash
-
-最小活跃数或者最快响应
-
-### 单点登录
-
- **在多个应用系统中，只需要登录一次，就可以访问其他相互信任的应用系统** ，一般应用在分布式环境中。
-
-### 分布式session存储方案
-
-四个方案都是可行的，但是对于大型网站来说，Session Sticky和Session数据集中存储是比较好的方案。
-
-《大型网站系统与[Java](http://lib.csdn.net/base/javaee)中间价实践》
-
-#### Session Stick
-
- **Session Stick** 方案即将客户端的每次请求都转发至同一台服务器，这就需要负载均衡器能够根据每次请求的会话标识（SessionId）来进行请求转发 
-
-这种方案实现比较简单，对于Web服务器来说和单机的情况一样。但是可能会带来如下问题：
-
-1. 如果有一台服务器宕机或者重启，那么这台机器上的会话数据会全部丢失。
-
-2. 会话标识是应用层信息，那么负载均衡要将同一个会话的请求都保存到同一个Web服务器上的话，就需要进行应用层（第7层）的解析，这个开销比第4层大。
-
-3. 负载均衡器将变成一个有状态的节点，要将会话保存到具体Web服务器的映射。和无状态节点相比，内存消耗更大，容灾方面也会更麻烦。
-
-#### Session Replication
-
-Session Replication 的方案则不对负载均衡器做更改，而是在Web服务器之间增加了会话数据同步的功能，各个服务器之间通过同步保证不同Web服务器之间的Session数据的一致性
-
-Session Replication 方案对负载均衡器不再有要求，但是同样会带来以下问题：
-
-1. 同步Session数据会造成额外的网络带宽的开销，只要Session数据有变化，就需要将新产生的Session数据同步到其他服务器上，服务器数量越多，同步带来的网络带宽开销也就越大。
-
-2. 每台Web服务器都需要保存全部的Session数据，如果整个集群的Session数量太多的话，则对于每台机器用于保存Session数据的占用会很严重。
-
-#### Session 数据集中存储
-
-Session 数据集中存储方案则是将集群中的所有Session集中存储起来，Web服务器本身则并不存储Session数据，不同的Web服务器从同样的地方来获取Session
-
-相对于Session Replication方案，此方案的Session数据将不保存在本机，并且Web服务器之间也没有了Session数据的复制，但是该方案存在的问题在于：
-
-1. 读写Session数据引入了网络操作，这相对于本机的数据读取来说，问题就在于存在时延和不稳定性，但是通信发生在内网，则问题不大。
-
-2. 如果集中存储Session的机器或集群出现问题，则会影响应用。
-
-#### Cookie Based
-
-Cookie Based 方案是将Session数据放在Cookie里，访问Web服务器的时候，再由Web服务器生成对应的Session数据
-
-但是Cookie Based 方案依然存在不足：
-
-1. Cookie长度的限制。这会导致Session长度的限制。 
-
-2. 安全性。Seesion数据本来是服务端数据，却被保存在了客户端，即使可以加密，但是依然存在不安全性。
-
-3. 带宽消耗。这里不是指内部Web服务器之间的宽带消耗，而是数据中心的整体外部带宽的消耗。
-
-4. 性能影响。每次HTTP请求和响应都带有Seesion数据，对Web服务器来说，在同样的处理情况下，响应的结果输出越少，支持的并发就会越高。
-
-### 分布式事务了解吗？你们如何解决分布式事务问题的？
-
-实现分布式事务有以下 3 种基本方法：
-
-- 基于 XA 协议的二阶段提交协议方法；
-- 三阶段提交协议方法；
-- 基于消息的最终一致性方法。
-
- 其中，基于 XA 协议的二阶段提交协议方法和三阶段提交协议方法，采用了强一致性，遵从 ACID，基于消息的最终一致性方法，采用了最终一致性，遵从 BASE 理论。 
-
-#### 3 XA方案也叫做两阶段提交事务方案.
-
-举个例子，比如公司经常团建，然后一般会有个主席（就是负责组织团建的那个人）。
-
-> tb，team building，团建
-
-- 第一个阶段，一般tb主席会提前问团队里的每个人，说，大家伙，下周六我们去滑雪+烧烤，去吗？
-   \- 这个时候tb主席开始等待每个人的回答，如果所有人都说ok，那么就可以决定一起去这次tb
-   \- 如果这个阶段里，任何一个人回答说，我有事不去了，那么tb主席就会取消这次活动
-- 第二个阶段，那下周六大家就一起去滑雪+烧烤了
-
-这就是所谓的XA事务，两阶段提交
-
-有一个事务管理器，负责协调多个数据库（资源管理器）的事务，事务管理器先问各个数据库你准备好了吗？
-
-- 如果每个数据库都回复ok，那么就正式提交事务，在各个数据库上执行操作
-- 任何一个数据库回答不ok，那么就回滚事务。
-
-这种分布式事务方案，比较适合单块应用中，跨多个库的分布式事务，而且因为严重依赖于数据库层面来搞定复杂的事务，效率很低，绝对**不适合高并发**场景
-
-如果要玩，那么基于Spring + JTA就可以搞定，自己随便搜个demo看看~
-
-这个方案，很少用，一般**某个系统内部如果出现跨多个库**的操作，是不合规的!
-
-现在的微服务，一个大的系统分成几十甚至上百个服务。一般来说，我们的规约，是要求每个服务只能操作自己对应的一个数据库!
-
-如果你要操作别的服务对应的库，不允许直连别的服务的库，违反微服务架构的规范
-
-你随便交叉访问，几百个服务的话，全体乱套，这样的一套服务是没法管理的，会经常数据被别人改错，自己的库被别人写挂!
-
-如果你要操作别人的服务的库，你必须通过**调用别的服务的接口**实现，绝对不允许你交叉访问别人的数据库！
-
-- 两阶段提交方案示意图
-  ![img](https://ask.qcloudimg.com/http-save/1752328/zrjb53e0wh.png)
-
-#### 4 TCC方案
-
-全称:Try、Confirm、Cancel
-
-##### 4.1 三个阶段
-
-###### 4.1.1 Try
-
-对各个服务的资源做检测,对资源进行锁定或者预留
-
-###### 4.1.2 Confirm
-
-在各个服务中执行实际的操作
-
-###### 4.1.3 Cancel
-
-如果任何一个服务的业务方法执行出错，那么这里就需要进行补偿，即执行已操作成功的业务逻辑的回滚操作
-
-##### 4.2 跨银行转账案例
-
-涉及到两个银行的分布式事务，如果用TCC方案来实现，思路是这样的：
-
-- Try阶段
-   先把两个银行账户中的资金给它冻结住,不让操作了
-- Confirm阶段
-   执行实际的转账操作，A银行账户的资金扣减，B银行账户的资金增加
-- Cancel阶段
-   如果任何一个银行的操作执行失败，那么就需要回滚进行补偿
-   比如A银行账户如果已经扣减了，但是B银行账户资金增加失败了，那么就得把A银行账户资金给加回去
-
-该方案说实话几乎很少使用，但也有使用场景.
-
-因为这个事务的回滚实际上严重依赖于你自己写代码来回滚和补偿了，会造成补偿代码巨大，非常恶心!
-
-比如说我们，一般来说和钱相关的支付、交易等相关的场景，我们会用TCC，严格严格保证分布式事务要么全部成功，要么全部自动回滚，严格保证资金的正确性!
-
-##### 4.3 适用场景
-
-除非你是真的一致性要求太高，是系统中核心之核心的场景!
-
-常见的就是资金类的场景，那可以用TCC方案，自己编写大量的业务逻辑，自己判断一个事务中的各个环节是否ok，不ok就执行补偿/回滚代码
-
-而且最好是你的各个业务执行的时间都比较短
-
-但是说实话，一般尽量别这么搞，自己手写回滚逻辑，或者是补偿逻辑，实在太恶心了，业务代码也很难维护
-
-- TCC方案
-  ![img](https://ask.qcloudimg.com/http-save/1752328/zxtt97e47h.png)
-
-#### 5 本地消息表
-
-ebay搞出来的这么一套思想
-
-##### 5.1 简介
-
-- A系统在本地一个事务里操作的同时，插入一条数据到消息表
-- 接着A系统将这个消息发送到MQ
-- B系统接收到消息后，在一个事务里，往自己本地消息表里插入一条数据，同时执行其他的业务操作，如果这个消息已经被处理过了，那么此时这个事务会回滚，这样保证不会重复处理消息
-- B系统执行成功后，就会更新自己本地消息表的状态以及A系统消息表的状态
-- 如果B系统处理失败，那么就不会更新消息表状态，那么此时A系统会定时扫描自己的消息表，如果有未处理的消息，会再次发送到MQ中去，让B再处理
-
-##### 5.2 优点
-
-这个方案保证了**最终一致性**
-
-哪怕B事务失败了，但是A会不断重发消息，直到B那边成功为止
-
-##### 5.3 缺陷
-
-最大的问题就在于严重依赖于数据库的消息表来管理事务,这个会导致高并发场景无力,难以扩展呢,一般确实很少用
-
-- 本地消息表方案
-  ![img](https://ask.qcloudimg.com/http-save/1752328/amebkemm0g.png)
-
-#### 6 可靠消息最终一致性方案
-
-干脆不用本地的消息表了，直接基于MQ来实现事务。比如阿里的RocketMQ就支持消息事务!
-
-##### 6.1 简介
-
-- A系统先发送一个prepared消息到MQ，如果这个prepared消息发送失败,那么就直接取消操作,不执行了
-- 如果这个消息发送成功过了，那么接着执行本地事务，如果成功就告诉MQ发送确认消息，如果失败就告诉MQ回滚消息
-- 如果发送了确认消息，那么此时B系统会接收到确认消息，然后执行本地的事务
-- MQ会自动定时轮询所有prepared消息回调你的接口，问你这个消息是不是本地事务处理失败了，所有没发送确认的消息,是继续重试还是回滚？
-   这里你就可以查下数据库看之前本地事务是否执行，如果回滚了，那么这里也回滚吧。这个就是避免可能本地事务执行成功了，别确认消息发送失败了。
-- 如果系统B的事务失败了咋办？
-   重试咯，自动不断重试直到成功，如果实在是不行，要么就是针对重要的资金类业务进行回滚，比如B系统本地回滚后，想办法通知系统A也回滚；或者是发送报警由人工来手工回滚和补偿
-
-这个还是比较合适的，目前国内互联网公司大都是这么玩的，要不你举用RocketMQ支持的，要不你就自己基于类似ActiveMQ？RabbitMQ？自己封装一套类似的逻辑出来，总之思路就是这样子的
-
-
-
-#### 7 最大努力通知方案
-
-##### 7.1 简介
-
-- 系统A本地事务执行完后，发送一个消息到MQ
-- 有一专门消费MQ的最大努力通知服务，会消费MQ,然后写入数据库中记录下来，亦可是放入内存队列，接着调用系统B的接口
-- 若系统B执行成功就ok；若系统B执行失败，那么最大努力通知服务就定时尝试重新调用系统B，反复N次，最后还是不行才放弃
-- 最大努力通知方案示意图![img](https://ask.qcloudimg.com/http-save/1752328/hx700mt14x.png)
-
-
-
-
-## 项目
-
-### 开发中遇到的一些问题
-
-#### Service 中一个A方法调用B方法，事务失效
-
-因为在A方法调用的时候，是使用代理类 `ServiceProxy` 调用，先调用外层包装后，然后调用目标Service.A方法，但是在调用B方法的时候，已经进入了实际的Service，这个时候就直接调用Service.B方法
-
-导致B方法的事务失效
-
-
-
-#### Dubbo 调用接口返回为null
-
-dubbo接口调用返回null,由于dubbo默认为同步调用，而如果在方法有async = true，则为异步。即时在方法上async = false，也不起作用。这个还是同dubbo的注入有一点关系，首先要看dubbo注入读取顺序，由于默认采用singleton="true"，所以如果第一个读取到是异步async = true，则所有注入的同这个实例相关都是异步。
-
-
-
-## 开放问题
-
-用一句话概括 Web 编程的特点
-
-Google是如何在一秒内把搜索结果返回给用户
-
-树（二叉或其他）形成许多普通数据结构的基础。请描述一些这样的数据结构以及何时可以使用它们
-
-某一项功能如何设计
-
-线上系统突然变得异常缓慢，你如何查找问题
-
-什么样的项目不适合用框架
-
-新浪微博是如何实现把微博推给订阅者
-
-简要介绍下从浏览器输入 URL 开始到获取到请求界面之后 Java Web 应用中发生了什么
-
-请你谈谈SSH整合
-
-高并发下，如何做到安全的修改同一行数据
-
-12306网站的订票系统如何实现，如何保证不会票不被超卖
-
-网站性能优化如何优化的
-
-聊了下曾经参与设计的服务器架构
-
-请思考一个方案，实现分布式环境下的 countDownLatch
-
-请思考一个方案，设计一个可以控制缓存总体大小的自动适应的本地缓存
-
-在你的职业生涯中，算得上最困难的技术挑战是什么
-
-编程中自己都怎么考虑一些设计原则的，比如开闭原则，以及在工作中的应用
-
-解释一下网络应用的模式及其特点
-
-设计一个在线文档系统，文档可以被编辑，如何防止多人同时对同一份文档进行编辑更新
-
-说出数据连接池的工作机制是什么
-
-怎么获取一个文件中单词出现的最高频率
-
-如果有机会重新设计你们的产品，你会怎么做
-
-如何搭建一个高可用系统
-
-如何启动时不需输入用户名与密码
-
-如何在基于Java的Web项目中实现文件上传和下载
-
-如何实现一个秒杀系统，保证只有几位用户能买到某件商品。
-
-如何实现负载均衡，有哪些算法可以实现
-
-如何设计一个购物车？想想淘宝的购物车如何实现的
-
-如何设计一套高并发支付方案，架构如何设计
-
-### 如何设计建立和保持 100w 的长连接
-
-服务器内核调优(tcp，文件数)，客户端调优，框架选择(netty)
-
-
-
-如何避免浏览器缓存。
-
-如何防止缓存雪崩
-
-如果AB两个系统互相依赖，如何解除依
-
-### 如果有人恶意创建非法连接，怎么解决
-
-使用Filter，只是在不同的层面的，比如可以使用
-
-如果有几十亿的白名单，每天白天需要高并发查询，晚上需要更新一次，如何设计这个功能
-
-如果系统要使用超大整数（超过long长度范围），请你设计一个数据结构来存储这种超大型数字以及设计一种算法来实现超大整数加法运算）
-
-如果让你实现一个并发安全的链表，你会怎么做
-
-应用服务器与WEB 服务器的区别？应用服务器怎么监控性能，各种方式的区别？你使用过的应用服务器优化技术有哪些
-
-大型网站在架构上应当考虑哪些问题
-
-有没有处理过线上问题？出现内存泄露，CPU利用率标高，应用无响应时如何处理的
-
-最近看什么书，印象最深刻的是什么
-
-描述下常用的重构技巧
-
-你使用什么版本管理工具？分支（Branch）与标签（Tag）之间的区别在哪里
-
-你有了解过存在哪些反模式（Anti-Patterns）吗
-
-你用过的网站前端优化的技术有哪些
-
-如何分析Thread dump
-
-你如何理解AOP中的连接点（Joinpoint）、切点（Pointcut）、增强（Advice）、引介（Introduction）、织入（Weaving）、切面（Aspect）这些概念
-
-你是如何处理内存泄露或者栈溢出问题的
-
-你们线上应用的 JVM 参数有哪些
-
-怎么提升系统的QPS和吞吐量
-
-## Web
-
-### Http
-
-#### 说说你知道的几种HTTP响应码
-
-200：ok 一切正常
-
-401：Unauthorized，登录权限的问题，要么错误，要么没有授权
-
-404：not found
-
-
-
-1xx：信息，请求收到，继续处理 
-2xx：成功，行为被成功地接受、理解和采纳 
-3xx：重定向，为了完成请求，必须进一步执行的动作 
-4xx：客户端错误，请求包含语法错误或者请求无法实现 
-5xx：服务器错误，服务器不能实现一种明显无效的请求
-
-#### 如何避免浏览器缓存
-
-无法被浏览器缓存的请求： 
-HTTP信息头中包含Cache-Control:no-cache，pragma:no-cache，或Cache-Control:max-age=0等告诉浏览器不用缓存的请求
-需要根据Cookie，认证信息等决定输入内容的动态请求是不能被缓存的 
-经过HTTPS安全加密的请求（有人也经过测试发现，ie其实在头部加入Cache-Control：max-age信息，firefox在头部加入Cache-Control:Public之后，能够对HTTPS的资源进行缓存，参考《HTTPS的七个误解》）
-POST请求无法被缓存 
-HTTP响应头中不包含Last-Modified/Etag，也不包含Cache-Control/Expires的请求无法被缓存 
-http://www.alloyteam.com/2012/03/web-cache-2-browser-cache/
-
-### 聊聊HTTPS和SSL/TLS协议
-
-####  SSL/TLS”是干嘛用滴 
-
- **SSL** 是洋文“Secure Sockets Layer”的缩写，中文叫做“**安全套接层**”。它是在上世纪90年代中期，由网景公司设计的。（顺便插一句，网景公司不光发明了 SSL，还发明了很多 Web 的基础设施——比如“CSS 样式表”和“JS 脚本”）
-为啥要发明 SSL 这个协议捏？因为原先互联网上使用的 HTTP 协议是明文的，存在很多缺点——比如传输内容会被偷窥（嗅探）和篡改。发明 SSL 协议，就是为了解决这些问题。
-到了1999年，SSL 因为应用广泛，已经成为互联网上的事实标准。**IETF 就在那年把 SSL 标准化**。标准化之后的名称改为 **TLS**（是“Transport Layer Security”的缩写），中文叫做“**传输层安全协议**”。
-很多相关的文章都把这两者并列称呼（SSL/TLS），因为这两者可以视作同一个东西的不同阶段。 
-
-
-
-####  HTTPS”是啥意思 
-
- 解释完 HTTP 和 SSL/TLS，现在就可以来解释 HTTPS 啦。咱们通常所说的 HTTPS 协议，说白了就是“**HTTP  协议”和“SSL/TLS 协议”的组合**。你可以把 HTTPS 大致理解为——“HTTP over SSL”或“HTTP over TLS”（反正 SSL 和 TLS 差不多）。 
-
-####  HTTP 和 TCP 之间的关系 
-
-简单地说，TCP 协议是 HTTP 协议的基石——HTTP 协议需要依靠 TCP 协议来传输数据。
-
-在网络分层模型中，TCP 被称为“传输层协议”，而 HTTP 被称为“应用层协议”。
-
-有很多常见的应用层协议是以 TCP 为基础的，比如“FTP、SMTP、POP、IMAP”等。
-
-#### HTTP 协议如何使用 TCP 连接？
-
-HTTP 对 TCP 连接的使用，分为两种方式：俗称“短连接”和“长连接”（“长连接”又称“持久连接”，洋文叫做“Keep-Alive”或“Persistent Connection”）
-假设有一个网页，里面包含好多图片，还包含好多【外部的】CSS 文件和 JS 文件。在“短连接”的模式下，浏览器会先发起一个 TCP 连接，拿到该网页的 HTML 源代码（拿到 HTML 之后，这个 TCP  连接就关闭了）。然后，浏览器开始分析这个网页的源码，知道这个页面包含很多外部资源（图片、CSS、JS）。然后针对【每一个】外部资源，再分别发起一个个 TCP 连接，把这些文件获取到本地（同样的，每抓取一个外部资源后，相应的 TCP 就断开）
-相反，如果是“**长连接**”的方式，浏览器也会先发起一个 TCP 连接去抓取页面。但是抓取页面之后，该 TCP 连接并不会立即关闭，而是暂时先保持着（所谓的“Keep-Alive”）。然后浏览器分析  HTML 源码之后，发现有很多外部资源，就用刚才那个 TCP 连接去抓取此页面的外部资源。
-
-在 HTTP 1.0 版本，【默认】使用的是“短连接”（那时候是 Web 诞生初期，网页相对简单，“短连接”的问题不大）；
-到了1995年底开始制定 HTTP 1.1 草案的时候，网页已经开始变得复杂（网页内的图片、脚本越来越多了）。这时候再用短连接的方式，效率太低下了（因为建立 TCP  连接是有“时间成本”和“CPU 成本”滴）。所以，在 HTTP 1.1 中，【默认】采用的是“Keep-Alive”的方式。
-关于“Keep-Alive”的更多介绍，可以参见维基百科词条
-
-#### 啥是“对称加密”？
-
-所谓的“对称加密技术”，意思就是说：“加密”和“解密”使用【相同的】密钥。这个比较好理解。就好比你用 7zip 或 WinRAR  创建一个带密码（口令）的加密压缩包。当你下次要把这个压缩文件解开的时候，你需要输入【同样的】密码。在这个例子中，密码/口令就如同刚才说的“密钥”。
-
-#### 啥是“非对称加密”？
-
-所谓的“非对称加密技术”，意思就是说：“加密”和“解密”使用【不同的】密钥。这玩意儿比较难理解，也比较难想到。当年“非对称加密”的发明，还被誉为“密码学”历史上的一次革命。
-由于篇幅有限，对“非对称加密”这个话题，俺就不展开了。有空的话，再单独写一篇扫盲。
-
-#### 对称加密 和 非对称加密 各自有啥优缺点？
-
-看完刚才的定义，很显然：（从功能角度而言）“非对称加密”能干的事情比“对称加密”要多。这是“非对称加密”的优点。但是“非对称加密”的实现，通常需要涉及到“复杂数学问题”。所以，“非对称加密”的性能通常要差很多（相对于“对称加密”而言）。
-这两者的优缺点，也影响到了 SSL 协议的设计。
+#### 分库分表之后，id主键如何处理？
 
 
